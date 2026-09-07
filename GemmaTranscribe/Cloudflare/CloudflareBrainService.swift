@@ -85,14 +85,18 @@ public struct CloudflareBrainService: Sendable {
         guard !cleanKey.isEmpty else { return }
         
         let email = (UserDefaults.standard.string(forKey: AppConfig.cloudflareEmailKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if !email.isEmpty {
-            // Global API Key mode
-            request.setValue(email, forHTTPHeaderField: "X-Auth-Email")
-            request.setValue(cleanKey, forHTTPHeaderField: "X-Auth-Key")
-        } else {
-            // API Token mode (Bearer)
-            request.setValue("Bearer \(cleanKey)", forHTTPHeaderField: "Authorization")
+        
+        // Cloudflare Global API Key format: 'cfk_...' or 37-hex characters with email
+        if cleanKey.hasPrefix("cfk_") || !email.isEmpty {
+            if !email.isEmpty {
+                request.setValue(email, forHTTPHeaderField: "X-Auth-Email")
+                request.setValue(cleanKey, forHTTPHeaderField: "X-Auth-Key")
+                return
+            }
         }
+        
+        // Scoped API Token format (Bearer)
+        request.setValue("Bearer \(cleanKey)", forHTTPHeaderField: "Authorization")
     }
     
     public static func process(cleanTranscript: String, locale: String = "ru") async throws -> CloudflareBrainResponse {
@@ -191,7 +195,7 @@ public struct CloudflareBrainService: Sendable {
             
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
                 throw NSError(domain: "CloudflareBrainService", code: httpResponse.statusCode, userInfo: [
-                    NSLocalizedDescriptionKey: "Ошибка авторизации Cloudflare (HTTP \(httpResponse.statusCode)). Проверьте права токена (Workers AI: Edit)."
+                    NSLocalizedDescriptionKey: "Ошибка авторизации Cloudflare (HTTP \(httpResponse.statusCode)). Проверьте API Key/Token и Email."
                 ])
             }
             
@@ -271,17 +275,20 @@ public struct CloudflareBrainService: Sendable {
         let email = (UserDefaults.standard.string(forKey: AppConfig.cloudflareEmailKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
         guard !cleanKey.isEmpty else {
-            return (false, "Не заполнен API Token Cloudflare.")
+            return (false, "Не заполнен API Key Cloudflare.")
         }
         
-        // If Direct Workers AI with Bearer Token, first verify token validity at user/tokens/verify
-        if endpoint.isDirectAI && email.isEmpty {
+        // Detect Global API Key (prefix cfk_ or legacy hex)
+        let isGlobalKey = cleanKey.hasPrefix("cfk_") || (cleanKey.count == 37 && cleanKey.range(of: "^[a-fA-F0-9]{37}$", options: .regularExpression) != nil)
+        
+        if isGlobalKey && email.isEmpty {
+            return (false, "Ключ '\(cleanKey.prefix(4))...' — это Global API Key. Для него обязательно заполните Email вашей учетной записи Cloudflare в Настройках. Либо создайте API Token в dash.cloudflare.com/profile/api-tokens.")
+        }
+        
+        // If Bearer API Token (not Global Key), check token validity at user/tokens/verify
+        if !isGlobalKey && email.isEmpty && endpoint.isDirectAI {
             if let tokenVerification = await verifyTokenValidity(cleanKey) {
                 if !tokenVerification.isValid {
-                    // Check if key is formatted like a Global API Key (usually 37 hex characters)
-                    if cleanKey.count == 37 && cleanKey.range(of: "^[a-fA-F0-9]{37}$", options: .regularExpression) != nil {
-                        return (false, "Вы указали Global API Key вместо API Token. Для Global Key укажите Email аккаунта, либо создайте API Token в dash.cloudflare.com/profile/api-tokens.")
-                    }
                     return (false, "Cloudflare отклонил токен: \(tokenVerification.detail). Убедитесь, что токен скопирован без лишних символов.")
                 }
             }
@@ -320,11 +327,10 @@ public struct CloudflareBrainService: Sendable {
             }
             
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                let errText = String(data: data, encoding: .utf8) ?? ""
-                if endpoint.isDirectAI {
-                    return (false, "Ошибка 401: Токен не имеет прав для Workers AI на аккаунте \(endpoint.accountId ?? ""). В dash.cloudflare.com -> API Tokens добавьте разрешение: Account -> Workers AI -> Edit.")
+                if isGlobalKey {
+                    return (false, "Ошибка 401: Неверный Global API Key или не совпадает Email учетной записи.")
                 } else {
-                    return (false, "Ошибка 401 авторизации Cloudflare Worker: \(errText)")
+                    return (false, "Ошибка 401: Токен не имеет прав для Workers AI на аккаунте \(endpoint.accountId ?? ""). В dash.cloudflare.com -> API Tokens добавьте разрешение: Account -> Workers AI -> Edit.")
                 }
             }
             
@@ -343,7 +349,8 @@ public struct CloudflareBrainService: Sendable {
             
             if (200...299).contains(httpResponse.statusCode) {
                 let targetDesc = endpoint.isDirectAI ? "Workers AI (\(endpoint.model))" : "Cloudflare Worker"
-                return (true, "Успешно! Подключено к \(targetDesc) (\(latencyMs) мс)")
+                let authMethod = isGlobalKey ? "Global Key" : "API Token"
+                return (true, "Успешно! Подключено к \(targetDesc) через \(authMethod) (\(latencyMs) мс)")
             } else {
                 let errSnippet = String(data: data.prefix(140), encoding: .utf8) ?? ""
                 return (false, "HTTP \(httpResponse.statusCode): \(errSnippet)")

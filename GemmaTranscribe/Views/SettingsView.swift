@@ -168,22 +168,36 @@ public struct SettingsView: View {
                         }
                     }
                     
-                    // Toggle for Global API Key Email
-                    DisclosureGroup("Использовать Global API Key вместо Token", isExpanded: $showGlobalKeyEmail) {
+                    // Email for Global API Key (cfk_...)
+                    if cloudflareApiKey.trimmingCharacters(in: .whitespacesAndNewlines).hasPrefix("cfk_") || showGlobalKeyEmail {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Email учетной записи Cloudflare")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                            HStack {
+                                Text("Email учетной записи Cloudflare")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(.orange)
+                                Spacer()
+                                Text("Требуется для ключей cfk_")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
                             TextField("ваш-email@domain.com", text: $cloudflareEmail)
                                 .font(.subheadline)
                                 .autocapitalization(.none)
                                 .keyboardType(.emailAddress)
                                 .disableAutocorrection(true)
                         }
-                        .padding(.top, 4)
+                        .padding(8)
+                        .background(Color.orange.opacity(0.08))
+                        .cornerRadius(8)
+                    } else {
+                        Button {
+                            showGlobalKeyEmail.toggle()
+                        } label: {
+                            Text("Использовать Global API Key (указать Email)")
+                                .font(.caption)
+                                .foregroundColor(.dictusAccent)
+                        }
                     }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
                     
                     // Endpoint preview
                     if let resolved = CloudflareBrainService.resolveEndpoint() {
