@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A11CE00723456789ABCDEF07 /* LiteRTLM in Frameworks */ = {isa = PBXBuildFile; productRef = A11CE00623456789ABCDEF06 /* LiteRTLM */; };
 		07798471F8584A35858302E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE5883442D564CDE9498152C /* Assets.xcassets */; };
 		B2252313D5024A3F9D447C98 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E9CD96DC044ADC9A0756D9 /* AppConfig.swift */; };
 		AFECBCA580234B48AB5704E3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29018943F50F499EA75090C3 /* ContentView.swift */; };
@@ -126,6 +127,7 @@ A11CE00423456789ABCDEF04 /* WAVEncoder.swift */ = {isa = PBXFileReference; lastK
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A11CE00723456789ABCDEF07 /* LiteRTLM in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,7 +228,10 @@ A11CE00223456789ABCDEF02 /* AppleOnDeviceSpeechEngine.swift */,
 			);
 			name = GemmaTranscribe;
 			productName = GemmaTranscribe;
-			productReference = 6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */;
+						packageProductDependencies = (
+				A11CE00623456789ABCDEF06 /* LiteRTLM */,
+			);
+productReference = 6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -256,11 +261,34 @@ A11CE00223456789ABCDEF02 /* AppleOnDeviceSpeechEngine.swift */,
 			productRefGroup = BF017CC7D156443397DD9034 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
-			targets = (
+						packageReferences = (
+				A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */,
+			);
+targets = (
 				A970C100ED9C41FFA8CBBE27 /* GemmaTranscribe */,
 			);
 		};
 /* End PBXProject section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google-ai-edge/LiteRT-LM";
+			requirement = {
+				kind = exactVersion;
+				version = 0.16.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A11CE00623456789ABCDEF06 /* LiteRTLM */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */;
+			productName = LiteRTLM;
+		};
+/* End XCSwiftPackageProductDependency section */
+
 
 /* Begin PBXResourcesBuildPhase section */
 		AE2773F042EB416E90D68FEB /* Resources */ = {

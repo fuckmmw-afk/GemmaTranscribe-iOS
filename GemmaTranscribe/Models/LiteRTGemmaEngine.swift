@@ -8,6 +8,9 @@
 
 import Foundation
 import OSLog
+#if canImport(LiteRTLM)
+import LiteRTLM
+#endif
 
 private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "LiteRTGemmaEngine")
 
@@ -18,6 +21,11 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
     private var modelURL: URL?
     private var _isLoaded: Bool = false
     private let queue = DispatchQueue(label: "com.gemmatranscribe.litert-engine", qos: .userInitiated)
+    
+#if canImport(LiteRTLM)
+    private var engine: Engine?
+    private var conversation: Conversation?
+#endif
     
     public var isLoaded: Bool {
         _isLoaded
@@ -34,7 +42,6 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
     public func loadModel(from localDirectory: URL) async throws {
         logger.info("Initializing LiteRT runtime for \(self.modelId, privacy: .public) from \(localDirectory.path, privacy: .public)")
         
-        // Find .litertlm, .tflite, or model weight file in local directory
         let fileManager = FileManager.default
         let contents = (try? fileManager.contentsOfDirectory(at: localDirectory, includingPropertiesForKeys: nil)) ?? []
         
@@ -48,71 +55,80 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
             throw NSError(
                 domain: "GemmaTranscribe.LiteRT",
                 code: 404,
-                userInfo: [NSLocalizedDescriptionKey: "No model files found in \(localDirectory.lastPathComponent)"]
+                userInfo: [NSLocalizedDescriptionKey: "Файл модели Gemma 3n не найден в папке \(localDirectory.lastPathComponent)"]
             )
         }
         
         self.modelURL = validModelFile
         
-        // Ensure memory mapping and LiteRT initialization
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            queue.async {
-                do {
-                    // Initialize LiteRT / Google AI Edge session with mmap to avoid Jetsam memory termination
-                    self._isLoaded = true
-                    logger.info("LiteRT engine loaded successfully: \(validModelFile.lastPathComponent, privacy: .public)")
-                    continuation.resume()
-                }
-            }
+#if canImport(LiteRTLM)
+        do {
+            let config = try EngineConfig(
+                modelPath: validModelFile.path,
+                backend: .gpu,
+                visionBackend: nil,
+                audioBackend: .cpu,
+                maxNumTokens: 2048,
+                cacheDir: NSTemporaryDirectory()
+            )
+            let litertEngine = Engine(engineConfig: config)
+            try await litertEngine.initialize()
+            self.engine = litertEngine
+            self.conversation = try await litertEngine.createConversation()
+            self._isLoaded = true
+            logger.info("Google AI Edge LiteRT Engine initialized successfully for Gemma 3n: \(validModelFile.lastPathComponent, privacy: .public)")
+        } catch {
+            logger.error("Failed to initialize LiteRT GPU engine: \(error.localizedDescription). Trying CPU fallback...")
+            let fallbackConfig = try EngineConfig(
+                modelPath: validModelFile.path,
+                backend: .cpu,
+                visionBackend: nil,
+                audioBackend: .cpu,
+                maxNumTokens: 1024,
+                cacheDir: NSTemporaryDirectory()
+            )
+            let litertEngine = Engine(engineConfig: fallbackConfig)
+            try await litertEngine.initialize()
+            self.engine = litertEngine
+            self.conversation = try await litertEngine.createConversation()
+            self._isLoaded = true
+            logger.info("Google AI Edge LiteRT Engine (CPU) initialized for Gemma 3n")
         }
+#else
+        self._isLoaded = true
+        logger.info("LiteRT model registered: \(validModelFile.lastPathComponent, privacy: .public)")
+#endif
     }
     
     public func unload() async {
-        queue.sync {
-            self._isLoaded = false
-            self.modelURL = nil
-        }
+#if canImport(LiteRTLM)
+        self.conversation = nil
+        self.engine = nil
+#endif
+        self._isLoaded = false
+        self.modelURL = nil
         logger.info("LiteRT engine unloaded from memory")
     }
     
     public func transcribe(audioSamples: [Float]) async throws -> String {
         guard _isLoaded, let _ = modelURL else {
-            // If model is not downloaded/loaded yet, return informative prompt
             return ""
         }
-        
         guard !audioSamples.isEmpty else { return "" }
         
-        return try await withCheckedThrowingContinuation { continuation in
-            queue.async {
-                // Audio chunk inference through Gemma 3n E2B audio encoder
-                // On iPhone 12, chunks of 1.0-3.0s are fed to the model's audio encoder
-                // and transcribed into text tokens.
-                
-                // LiteRT Audio Tokenizer & LM Decoder invocation:
-                let transcribed = self.performLiteRTInference(samples: audioSamples)
-                continuation.resume(returning: transcribed)
-            }
+#if canImport(LiteRTLM)
+        if let conversation = self.conversation {
+            let wavData = WAVEncoder.encode(samples: audioSamples)
+            let audioMessage = Message(
+                of: .audioData(wavData),
+                .text("Стенографируй эту речь на русском языке точно с пунктуацией. Верни только распознанный текст.")
+            )
+            let response = try await conversation.sendMessage(audioMessage)
+            let transcribed = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
+            logger.info("Gemma 3n transcribed: \(transcribed.prefix(50))...")
+            return transcribed
         }
-    }
-    
-    private func performLiteRTInference(samples: [Float]) -> String {
-        // Compute energy / silence check
-        let sampleCount = samples.count
-        guard sampleCount > 0 else { return "" }
-        
-        var energy: Float = 0
-        for s in samples { energy += abs(s) }
-        energy /= Float(sampleCount)
-        
-        // Skip pure silence
-        if energy < 0.005 {
-            return ""
-        }
-        
-        // Native LiteRT runtime token decode simulation for audio chunks
-        // In real execution, LiteRT C/Swift API consumes the 16kHz float buffer
-        // and returns the decoded string chunk.
+#endif
         return ""
     }
 }
