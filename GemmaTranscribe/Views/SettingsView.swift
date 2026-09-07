@@ -19,6 +19,7 @@ public struct SettingsView: View {
     @AppStorage(AppConfig.cloudflareWorkerUrlKey) private var cloudflareUrl: String = AppConfig.defaultCloudflareWorkerUrl
     @AppStorage(AppConfig.cloudflareApiKeyKey) private var cloudflareApiKey: String = ""
     @AppStorage(AppConfig.cloudflareAccountIdKey) private var cloudflareAccountId: String = ""
+    @AppStorage(AppConfig.cloudflareEmailKey) private var cloudflareEmail: String = ""
     @AppStorage(AppConfig.cloudflareDirectModelKey) private var cloudflareModel: String = AppConfig.defaultCloudflareDirectModel
     @AppStorage(AppConfig.huggingFaceTokenKey) private var huggingFaceToken: String = ""
     
@@ -27,6 +28,7 @@ public struct SettingsView: View {
     @State private var connectionTestResult: (success: Bool, message: String)?
     @State private var isSecureApiKey = true
     @State private var isSecureHfToken = true
+    @State private var showGlobalKeyEmail = false
     
     public var body: some View {
         NavigationStack {
@@ -166,6 +168,23 @@ public struct SettingsView: View {
                         }
                     }
                     
+                    // Toggle for Global API Key Email
+                    DisclosureGroup("Использовать Global API Key вместо Token", isExpanded: $showGlobalKeyEmail) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Email учетной записи Cloudflare")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            TextField("ваш-email@domain.com", text: $cloudflareEmail)
+                                .font(.subheadline)
+                                .autocapitalization(.none)
+                                .keyboardType(.emailAddress)
+                                .disableAutocorrection(true)
+                        }
+                        .padding(.top, 4)
+                    }
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    
                     // Endpoint preview
                     if let resolved = CloudflareBrainService.resolveEndpoint() {
                         VStack(alignment: .leading, spacing: 4) {
@@ -271,12 +290,16 @@ public struct SettingsView: View {
             .sheet(isPresented: $showingModelManager) {
                 ModelManagerView()
             }
+            .onAppear {
+                if !cloudflareEmail.isEmpty {
+                    showGlobalKeyEmail = true
+                }
+            }
         }
     }
     
     private func cleanAccountId(_ input: String) {
         var trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        // If user pasted a full URL like https://api.cloudflare.com/client/v4/accounts/6d4f2e2b09179bb2068200d4632caaf2/ai/
         if let range = trimmed.range(of: "(?<=accounts/)[a-fA-F0-9]{32}", options: .regularExpression) {
             trimmed = String(trimmed[range])
         } else if let hexRange = trimmed.range(of: "[a-fA-F0-9]{32}", options: .regularExpression) {

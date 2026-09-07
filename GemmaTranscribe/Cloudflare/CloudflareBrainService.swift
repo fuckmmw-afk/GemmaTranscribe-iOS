@@ -21,6 +21,18 @@ public struct CloudflareBrainService: Sendable {
         public let model: String
     }
     
+    /// Cleans API Key from user copy-paste artifacts (e.g. "Bearer ", quotes, whitespace)
+    public static func cleanApiKey(_ raw: String) -> String {
+        var token = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        if (token.hasPrefix("\"") && token.hasSuffix("\"")) || (token.hasPrefix("'") && token.hasSuffix("'")) {
+            token = String(token.dropFirst().dropLast())
+        }
+        if token.lowercased().hasPrefix("bearer ") {
+            token = String(token.dropFirst(7)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return token
+    }
+    
     /// Normalizes and resolves user inputs (Account ID, partial URLs, Worker URLs) into a valid URL
     public static func resolveEndpoint() -> ResolvedEndpoint? {
         let mode = UserDefaults.standard.integer(forKey: AppConfig.cloudflareModeKey) // 0: Direct AI, 1: Custom Worker
@@ -31,10 +43,8 @@ public struct CloudflareBrainService: Sendable {
         
         // Mode 0: Direct Cloudflare Workers AI REST API
         if mode == 0 || rawUrl.contains("api.cloudflare.com") || (!accountId.isEmpty && !rawUrl.contains("workers.dev")) {
-            // Find Account ID (either from accountId field or extracted from URL)
             var extractedAccount = accountId
             if extractedAccount.isEmpty {
-                // Regex search for 32-hex character account ID in URL
                 if let range = rawUrl.range(of: "(?<=accounts/)[a-fA-F0-9]{32}", options: .regularExpression) {
                     extractedAccount = String(rawUrl[range])
                 } else if let hexRange = rawUrl.range(of: "[a-fA-F0-9]{32}", options: .regularExpression) {
@@ -43,15 +53,12 @@ public struct CloudflareBrainService: Sendable {
             }
             
             if !extractedAccount.isEmpty {
-                // Standard Cloudflare Workers AI REST endpoint:
-                // https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/run/@cf/meta/llama-3.1-8b-instruct
                 let resolvedString = "https://api.cloudflare.com/client/v4/accounts/\(extractedAccount)/ai/run/\(effectiveModel)"
                 if let validUrl = URL(string: resolvedString) {
                     return ResolvedEndpoint(url: validUrl, isDirectAI: true, accountId: extractedAccount, model: effectiveModel)
                 }
             }
             
-            // If rawUrl already has /ai/run/
             if rawUrl.contains("/ai/run/") {
                 var normalized = rawUrl
                 if !normalized.contains("/client/v4/") {
@@ -72,6 +79,22 @@ public struct CloudflareBrainService: Sendable {
         return nil
     }
     
+    private static func applyAuthHeaders(to request: inout URLRequest) {
+        let rawKey = UserDefaults.standard.string(forKey: AppConfig.cloudflareApiKeyKey) ?? ""
+        let cleanKey = cleanApiKey(rawKey)
+        guard !cleanKey.isEmpty else { return }
+        
+        let email = (UserDefaults.standard.string(forKey: AppConfig.cloudflareEmailKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if !email.isEmpty {
+            // Global API Key mode
+            request.setValue(email, forHTTPHeaderField: "X-Auth-Email")
+            request.setValue(cleanKey, forHTTPHeaderField: "X-Auth-Key")
+        } else {
+            // API Token mode (Bearer)
+            request.setValue("Bearer \(cleanKey)", forHTTPHeaderField: "Authorization")
+        }
+    }
+    
     public static func process(cleanTranscript: String, locale: String = "ru") async throws -> CloudflareBrainResponse {
         guard !cleanTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return CloudflareBrainResponse(
@@ -89,20 +112,16 @@ public struct CloudflareBrainService: Sendable {
             return fallbackLocalEnrichment(cleanTranscript: cleanTranscript)
         }
         
-        let apiKey = (UserDefaults.standard.string(forKey: AppConfig.cloudflareApiKeyKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        
         if endpoint.isDirectAI {
             return try await processDirectWorkersAI(
                 cleanTranscript: cleanTranscript,
                 endpoint: endpoint,
-                apiKey: apiKey,
                 locale: locale
             )
         } else {
             return try await processCustomWorker(
                 cleanTranscript: cleanTranscript,
                 endpoint: endpoint,
-                apiKey: apiKey,
                 locale: locale
             )
         }
@@ -113,12 +132,10 @@ public struct CloudflareBrainService: Sendable {
     private static func processDirectWorkersAI(
         cleanTranscript: String,
         endpoint: ResolvedEndpoint,
-        apiKey: String,
         locale: String
     ) async throws -> CloudflareBrainResponse {
         logger.info("Executing Direct Cloudflare Workers AI request to: \(endpoint.url.absoluteString, privacy: .public)")
         
-        // 1. On-device Wikipedia search for contextual enrichment
         let searchQuery = extractSearchQuery(from: cleanTranscript)
         let webCitation = await performWikipediaSearch(query: searchQuery, locale: locale)
         
@@ -162,9 +179,7 @@ public struct CloudflareBrainService: Sendable {
         var request = URLRequest(url: endpoint.url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        }
+        applyAuthHeaders(to: &request)
         request.httpBody = httpBody
         request.timeoutInterval = 35.0
         
@@ -176,18 +191,8 @@ public struct CloudflareBrainService: Sendable {
             
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
                 throw NSError(domain: "CloudflareBrainService", code: httpResponse.statusCode, userInfo: [
-                    NSLocalizedDescriptionKey: "Ошибка авторизации Cloudflare (HTTP \(httpResponse.statusCode)). Проверьте API Token (Bearer)."
+                    NSLocalizedDescriptionKey: "Ошибка авторизации Cloudflare (HTTP \(httpResponse.statusCode)). Проверьте права токена (Workers AI: Edit)."
                 ])
-            }
-            
-            if httpResponse.statusCode == 400 {
-                let errText = String(data: data, encoding: .utf8) ?? ""
-                logger.error("Cloudflare AI HTTP 400: \(errText, privacy: .public)")
-                if errText.contains("7003") {
-                    throw NSError(domain: "CloudflareBrainService", code: 7003, userInfo: [
-                        NSLocalizedDescriptionKey: "Ошибка маршрутизации Cloudflare (7003). Проверьте корректность Account ID."
-                    ])
-                }
             }
             
             guard (200...299).contains(httpResponse.statusCode) else {
@@ -215,7 +220,6 @@ public struct CloudflareBrainService: Sendable {
     private static func processCustomWorker(
         cleanTranscript: String,
         endpoint: ResolvedEndpoint,
-        apiKey: String,
         locale: String
     ) async throws -> CloudflareBrainResponse {
         let payload: [String: Any] = [
@@ -231,9 +235,7 @@ public struct CloudflareBrainService: Sendable {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        }
+        applyAuthHeaders(to: &request)
         request.httpBody = httpBody
         request.timeoutInterval = 30.0
         
@@ -257,22 +259,40 @@ public struct CloudflareBrainService: Sendable {
         return try decoder.decode(CloudflareBrainResponse.self, from: data)
     }
     
-    // MARK: - Connection Diagnostics
+    // MARK: - Deep Diagnostics Connection Testing
     
     public static func testConnection() async -> (success: Bool, message: String) {
         guard let endpoint = resolveEndpoint() else {
             return (false, "Не удалось определить адрес эндпоинта. Укажите Account ID или URL воркера.")
         }
         
-        let apiKey = (UserDefaults.standard.string(forKey: AppConfig.cloudflareApiKeyKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let rawKey = UserDefaults.standard.string(forKey: AppConfig.cloudflareApiKeyKey) ?? ""
+        let cleanKey = cleanApiKey(rawKey)
+        let email = (UserDefaults.standard.string(forKey: AppConfig.cloudflareEmailKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
+        guard !cleanKey.isEmpty else {
+            return (false, "Не заполнен API Token Cloudflare.")
+        }
+        
+        // If Direct Workers AI with Bearer Token, first verify token validity at user/tokens/verify
+        if endpoint.isDirectAI && email.isEmpty {
+            if let tokenVerification = await verifyTokenValidity(cleanKey) {
+                if !tokenVerification.isValid {
+                    // Check if key is formatted like a Global API Key (usually 37 hex characters)
+                    if cleanKey.count == 37 && cleanKey.range(of: "^[a-fA-F0-9]{37}$", options: .regularExpression) != nil {
+                        return (false, "Вы указали Global API Key вместо API Token. Для Global Key укажите Email аккаунта, либо создайте API Token в dash.cloudflare.com/profile/api-tokens.")
+                    }
+                    return (false, "Cloudflare отклонил токен: \(tokenVerification.detail). Убедитесь, что токен скопирован без лишних символов.")
+                }
+            }
+        }
+        
+        // Second step: test actual AI execution on the account
         var request = URLRequest(url: endpoint.url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        if !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-        }
-        request.timeoutInterval = 12.0
+        applyAuthHeaders(to: &request)
+        request.timeoutInterval = 15.0
         
         if endpoint.isDirectAI {
             let directPayload: [String: Any] = [
@@ -296,11 +316,16 @@ public struct CloudflareBrainService: Sendable {
             let latencyMs = Int(Date().timeIntervalSince(start) * 1000)
             
             guard let httpResponse = response as? HTTPURLResponse else {
-                return (false, "Нет ответа от сервера")
+                return (false, "Нет ответа от сервера Cloudflare")
             }
             
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
-                return (false, "Ошибка авторизации (HTTP \(httpResponse.statusCode)). Проверьте API Token (Bearer).")
+                let errText = String(data: data, encoding: .utf8) ?? ""
+                if endpoint.isDirectAI {
+                    return (false, "Ошибка 401: Токен не имеет прав для Workers AI на аккаунте \(endpoint.accountId ?? ""). В dash.cloudflare.com -> API Tokens добавьте разрешение: Account -> Workers AI -> Edit.")
+                } else {
+                    return (false, "Ошибка 401 авторизации Cloudflare Worker: \(errText)")
+                }
             }
             
             if httpResponse.statusCode == 400 {
@@ -310,9 +335,7 @@ public struct CloudflareBrainService: Sendable {
                     let code = firstErr["code"] as? Int ?? 400
                     let msg = firstErr["message"] as? String ?? "Bad Request"
                     if code == 7003 {
-                        return (false, "Ошибка 7003: Неверный путь или Account ID. Проверьте 32-значный Account ID: \(msg)")
-                    } else if code == 10000 {
-                        return (false, "Ошибка 10000: Неверный API Token Cloudflare.")
+                        return (false, "Ошибка 7003: Неверный Account ID. Проверьте 32-значный хэш: \(msg)")
                     }
                     return (false, "Ошибка Cloudflare [\(code)]: \(msg)")
                 }
@@ -322,12 +345,41 @@ public struct CloudflareBrainService: Sendable {
                 let targetDesc = endpoint.isDirectAI ? "Workers AI (\(endpoint.model))" : "Cloudflare Worker"
                 return (true, "Успешно! Подключено к \(targetDesc) (\(latencyMs) мс)")
             } else {
-                let errSnippet = String(data: data.prefix(120), encoding: .utf8) ?? ""
+                let errSnippet = String(data: data.prefix(140), encoding: .utf8) ?? ""
                 return (false, "HTTP \(httpResponse.statusCode): \(errSnippet)")
             }
         } catch {
             return (false, "Сбой соединения: \(error.localizedDescription)")
         }
+    }
+    
+    /// Verifies the token directly against Cloudflare's token verification endpoint
+    private static func verifyTokenValidity(_ cleanToken: String) async -> (isValid: Bool, detail: String)? {
+        guard let url = URL(string: "https://api.cloudflare.com/client/v4/user/tokens/verify") else {
+            return nil
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "GET"
+        req.setValue("Bearer \(cleanToken)", forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8.0
+        
+        guard let (data, response) = try? await URLSession.shared.data(for: req),
+              let http = response as? HTTPURLResponse else {
+            return nil
+        }
+        
+        if http.statusCode == 200 {
+            return (true, "Токен активен")
+        }
+        
+        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+           let errors = json["errors"] as? [[String: Any]],
+           let first = errors.first,
+           let msg = first["message"] as? String {
+            return (false, msg)
+        }
+        
+        return (false, "HTTP \(http.statusCode)")
     }
     
     // MARK: - Helpers
