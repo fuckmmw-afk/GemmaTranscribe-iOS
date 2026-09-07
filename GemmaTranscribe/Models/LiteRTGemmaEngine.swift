@@ -67,7 +67,7 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
                 modelPath: validModelFile.path,
                 backend: .gpu,
                 visionBackend: nil,
-                audioBackend: .cpu,
+                audioBackend: .cpu(),
                 maxNumTokens: 2048,
                 cacheDir: NSTemporaryDirectory()
             )
@@ -81,9 +81,9 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
             logger.error("Failed to initialize LiteRT GPU engine: \(error.localizedDescription). Trying CPU fallback...")
             let fallbackConfig = try EngineConfig(
                 modelPath: validModelFile.path,
-                backend: .cpu,
+                backend: .cpu(),
                 visionBackend: nil,
-                audioBackend: .cpu,
+                audioBackend: .cpu(),
                 maxNumTokens: 1024,
                 cacheDir: NSTemporaryDirectory()
             )
