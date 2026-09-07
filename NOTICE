@@ -1,0 +1,24 @@
+GemmaTranscribe
+Copyright (c) 2026
+
+This product includes software developed by third parties:
+
+1. LiveTranscriber
+Based on LiveTranscriber by William Li.
+Original project: https://github.com/iamwilliamli/LiveTranscriber
+Copyright (c) William Li. All rights reserved.
+
+2. Dictus iOS
+Original project: https://github.com/getdictus/dictus-ios
+Copyright (c) 2026 PIVI Solutions.
+Licensed under the MIT License.
+
+3. LiquidGlass
+Original project: https://github.com/rguillen-dev/LiquidGlass
+Copyright (c) 2026 rguillen-dev.
+Licensed under the MIT License.
+
+4. Google AI Edge & LiteRT
+Original project: https://github.com/google-ai-edge/LiteRT-LM
+Copyright (c) Google LLC.
+Licensed under the Apache License, Version 2.0.

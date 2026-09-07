@@ -1,0 +1,26 @@
+# Xcode
+.DS_Store
+*/build/*
+build/
+*.xcuserstate
+project.xcworkspace
+xcuserdata/
+*.xcscmblueprint
+
+# Models & Weights (NEVER commit weights)
+*.litertlm
+*.bin
+*.tflite
+*.gguf
+*.mlmodelc
+Documents/models/
+models/
+
+# Cloudflare
+node_modules/
+.wrangler/
+
+# Artifacts
+*.ipa
+Payload/
+App.xcarchive/

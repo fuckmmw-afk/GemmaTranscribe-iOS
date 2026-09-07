@@ -1,0 +1,61 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Unsigned IPA
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_16.0.app || true
+          xcodebuild -version
+
+      - name: Build and Archive
+        run: |
+          mkdir -p build
+          xcodebuild archive \
+            -project GemmaTranscribe.xcodeproj \
+            -scheme GemmaTranscribe \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -archivePath "$PWD/build/GemmaTranscribe.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Package Unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -R "build/GemmaTranscribe.xcarchive/Products/Applications/GemmaTranscribe.app" Payload/
+          zip -qr -9 GemmaTranscribe-unsigned.ipa Payload
+          echo "IPA Size: $(du -sh GemmaTranscribe-unsigned.ipa | cut -f1)"
+
+      - name: Verify No Weights in IPA
+        run: |
+          echo "Checking IPA contents for illegal bundled weights..."
+          if unzip -l GemmaTranscribe-unsigned.ipa | grep -E "\.litertlm|\.bin|\.tflite|\.gguf"; then
+            echo "ERROR: Model weights detected inside IPA!"
+            exit 1
+          else
+            echo "SUCCESS: IPA is clean. No model weights bundled."
+          fi
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: GemmaTranscribe-unsigned-ipa
+          path: GemmaTranscribe-unsigned.ipa
+          retention-days: 14
