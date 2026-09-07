@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "618CE661A11246F0B0C8E968"
+               BlueprintIdentifier = "A970C100ED9C41FFA8CBBE27"
                BuildableName = "GemmaTranscribe.app"
                BlueprintName = "GemmaTranscribe"
                ReferencedContainer = "container:GemmaTranscribe.xcodeproj">
@@ -45,7 +45,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "618CE661A11246F0B0C8E968"
+            BlueprintIdentifier = "A970C100ED9C41FFA8CBBE27"
             BuildableName = "GemmaTranscribe.app"
             BlueprintName = "GemmaTranscribe"
             ReferencedContainer = "container:GemmaTranscribe.xcodeproj">
@@ -62,7 +62,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "618CE661A11246F0B0C8E968"
+            BlueprintIdentifier = "A970C100ED9C41FFA8CBBE27"
             BuildableName = "GemmaTranscribe.app"
             BlueprintName = "GemmaTranscribe"
             ReferencedContainer = "container:GemmaTranscribe.xcodeproj">

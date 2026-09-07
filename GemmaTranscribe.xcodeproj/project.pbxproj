@@ -7,118 +7,118 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		AC9752F788CA49DDA4162F2B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2253C148B2B34386A9DD088D /* Assets.xcassets */; };
-		957AA55567C9485F8BEEE74E /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D46112C2A3D4052BFC9E0EC /* AppConfig.swift */; };
-		F3CE4F5BA4D747A6BBFE1952 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDFBF222BBFE422CB9EC0A45 /* ContentView.swift */; };
-		DF8AFE5C96124F2BAD5B9470 /* DictationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67D423B4B9E34B94B57E6BF4 /* DictationStatus.swift */; };
-		1009C2AC4D284288952416C6 /* GemmaTranscribeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A95A147A6D14CA4A3792CC8 /* GemmaTranscribeApp.swift */; };
-		CD019AB40C9C471980A34FD6 /* AudioSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B88CEBBA48B492D90D19690 /* AudioSessionCoordinator.swift */; };
-		C81D1512237D4ABA9D4F7BC9 /* RecordingWaveformStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2C5DCA255F4FBE8A4B9F5B /* RecordingWaveformStore.swift */; };
-		AD7DFCFF6B3144AEBB0A3DD5 /* UnifiedAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8DA58EDC07548278D4C7590 /* UnifiedAudioCapture.swift */; };
-		0858EDD2872F4B8081029CCF /* CloudflareBrainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3BDDB185EEF4FC28C8AED72 /* CloudflareBrainService.swift */; };
-		C30B065DC038451A99F4BE72 /* CloudflareResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4CE5FA916214C89B7DFECBF /* CloudflareResponse.swift */; };
-		2FB50C8D071B44B8AC4E0D59 /* AnimatedMicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 826FE9E264EF4E078A14C2FC /* AnimatedMicButton.swift */; };
-		EA4244E1AE164D138E1BB960 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B8421AB9E54DA5A2ED07BD /* AppColors.swift */; };
-		E9A23E7968C444B998760DF8 /* BrandWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD4867BC61E42D6B67FF47D /* BrandWaveform.swift */; };
-		3E8CD7C0DD89417F972B2E8C /* DictusColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79005A97E7C14083B8E6EC22 /* DictusColors.swift */; };
-		53F4555663E1416DB6576CD0 /* GlassModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BC1583374294044A6D2062D /* GlassModifier.swift */; };
-		A0CE049DF5944AE7A4887DC2 /* GlassBackgroundExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EEA7825BE34461D910BD1A8 /* GlassBackgroundExtension.swift */; };
-		7B77CD0539BB4F20AFD39AE3 /* GlassBottomAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9036248E7A2B48F3964FC525 /* GlassBottomAccessory.swift */; };
-		95387A386E594AC1A7B20D47 /* GlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AA331DA8F59459B96AF7656 /* GlassButton.swift */; };
-		067E2E24E61D4E10B3A77F76 /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F42CD6E78B44B19FCDD170 /* GlassCard.swift */; };
-		9E298FE720B64D35963413F0 /* GlassColorContrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACF706F8B6C241F08D051519 /* GlassColorContrast.swift */; };
-		B501F4FFB8C3445C92AB6C75 /* GlassEffectContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0457D15F28D047DDB3A82DF5 /* GlassEffectContainer.swift */; };
-		ABA511E9F1384DD38F020696 /* GlassMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52D485EC028849259488147C /* GlassMaterial.swift */; };
-		FB226C2DD27E44C89762E3DE /* GlassMorphUnion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4138711334B34C14914D74D1 /* GlassMorphUnion.swift */; };
-		D4CD74E75B9E4645BA07E070 /* GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7601BA0571F9436ABEDFA7B9 /* GlassStyle.swift */; };
-		9CDBFC424F434781A8DFAE0C /* GlassTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 01FB513AA3FD4F26B42EE209 /* GlassTabBar.swift */; };
-		EA2CECA9186E4BDD8FE2AF9B /* GlassTintKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F065B5BB26545CE91DE5386 /* GlassTintKey.swift */; };
-		FAE330991C6B4316B99B40A1 /* View+Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 693CA59F15D64D44894A6660 /* View+Glass.swift */; };
-		8EBE4AF60FED404FAE3AFB1B /* PersistentLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37566159A11649EC8C31B968 /* PersistentLog.swift */; };
-		7CAB1C5F37014BE3B92B219F /* ProcessingAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = B076E35112B641AA80AF6A9E /* ProcessingAnimation.swift */; };
-		1153C0E02B1C4349BCCBFA17 /* ProcessingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF4CE1AFC81440409536D40E /* ProcessingWaveform.swift */; };
-		61A59C393D8040DEB2F49CC1 /* SmartModeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7405E97629F8440099677273 /* SmartModeBadge.swift */; };
-		09C9DF5128474A4DB9B67837 /* WaveformAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3015F2B0A88043E9B99F9F7C /* WaveformAnimation.swift */; };
-		81E94030D5464AF9B89C914A /* TranscriptionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90A9A8A1EB83415EB111A6E7 /* TranscriptionHistoryStore.swift */; };
-		25570A0FEFC74D73A77EF490 /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 903DBE1E6B274135BD609149 /* TranscriptionRecord.swift */; };
-		4DA11EEA439E47338EEF7F18 /* HuggingFaceSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A3CCA79819746FB86E094E2 /* HuggingFaceSearchService.swift */; };
-		DABEF7983ECD46D89D2C7CF6 /* LiteRTGemmaEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 320AA8E0260442B9A54635A5 /* LiteRTGemmaEngine.swift */; };
-		9853F87BA3C747A199097AF5 /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A7D366BA5D740AFB556AE96 /* ModelInfo.swift */; };
-		B287AEDFD61E4986924B04C0 /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC1E6EAE07C043C4941FB5CA /* ModelManager.swift */; };
-		BE6754B2D28C42C4BAE146E2 /* ModelRepoDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5E49DC784B44079AB7EC7AA /* ModelRepoDownloader.swift */; };
-		C455B243373C4057AF743EF9 /* SpeechModelEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 756694E69CAE43E18FF1FF8D /* SpeechModelEngine.swift */; };
-		6A7D1F4E1824410DA900FAA0 /* LiveTranscriptionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9830839D912741039725102B /* LiveTranscriptionCoordinator.swift */; };
-		DE9490139FBA4BF4A93C0815 /* TranscriptCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 260528DCAD1049AC881F3807 /* TranscriptCleaner.swift */; };
-		E8A6B209421E45B4B271EDEF /* TranscriptionLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9FDBA354D064A26A2EABAD5 /* TranscriptionLine.swift */; };
-		8C5AA198A27C4DAE8A2ABB9F /* AboutAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3EBE418F5D14EB5A2945712 /* AboutAttributionView.swift */; };
-		68DA65FA266144FB84880870 /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9013380F1F564A2F831CD739 /* HistoryView.swift */; };
-		E740F5DAE5054999B2B2417E /* HomeRecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CEA0F34DF9043F29B6D5CB2 /* HomeRecordingView.swift */; };
-		6AF827CF8FB44A229371C200 /* ModelCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 770FF1FC97DF4818B97C72A5 /* ModelCardView.swift */; };
-		6E017F4460454F16BAB2280E /* ModelManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 282FE96B4E8F4ED4BF35AD0A /* ModelManagerView.swift */; };
-		456298C124E14454ADC7745D /* PostStopResultCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66D644A16704FD4A5A5550A /* PostStopResultCardView.swift */; };
-		ECDB1A0442D04180BD030F89 /* RealtimeTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9AF60098DF24798ACC184C5 /* RealtimeTranscriptView.swift */; };
-		6DDAFAE73CA54AAF9AEDAAC8 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F32E5307F7440D8888AF3F7 /* SettingsView.swift */; };
-		41C7A45D8DD546ECA09B457C /* TranscriptionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CC9E6DD55BE476CA7183B06 /* TranscriptionDetailView.swift */; };
+		07798471F8584A35858302E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = CE5883442D564CDE9498152C /* Assets.xcassets */; };
+		B2252313D5024A3F9D447C98 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A8E9CD96DC044ADC9A0756D9 /* AppConfig.swift */; };
+		AFECBCA580234B48AB5704E3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29018943F50F499EA75090C3 /* ContentView.swift */; };
+		861BFD339FD44DE28F8CD020 /* DictationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70CCD10E105C44C4AE8E7828 /* DictationStatus.swift */; };
+		27BA23C1988741DCBF984500 /* GemmaTranscribeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02D2FC053ADB44EB9A3909E1 /* GemmaTranscribeApp.swift */; };
+		030F836EBCA445F8BA0F429A /* AudioSessionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B4583D4B490426D8075B547 /* AudioSessionCoordinator.swift */; };
+		69507CA0ACA0422A9D72AE91 /* RecordingWaveformStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9380AC1D10E4BDEA0586F57 /* RecordingWaveformStore.swift */; };
+		98CE315F6B6D424F9DA50C35 /* UnifiedAudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = B39E8496DEA3499BB4A04E31 /* UnifiedAudioCapture.swift */; };
+		A1EB46BCE0834D91B1A2FF53 /* CloudflareBrainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CBF39865CFF4DE88B8E8E0B /* CloudflareBrainService.swift */; };
+		61D75E39ED4548B5BBC644AF /* CloudflareResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = B073DCF552D749A1A5DEF41D /* CloudflareResponse.swift */; };
+		7D2BC99E86F04F3FB439F9C7 /* AnimatedMicButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85112A2B036B48C298506230 /* AnimatedMicButton.swift */; };
+		9EAB4BE4A3F44DD482E99765 /* AppColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9BA741D73AED448789084852 /* AppColors.swift */; };
+		953D352200324757882DC28B /* BrandWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F0D83649463409EB9E66390 /* BrandWaveform.swift */; };
+		21EDDC60984B49ECAB8DFD87 /* DictusColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4604AAE15D4D42BD8D5311D8 /* DictusColors.swift */; };
+		5A2851DACE6340B1BCBE10E5 /* GlassModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93F39AB283694845AF779FCA /* GlassModifier.swift */; };
+		F1B44D3865CD445DA9A13360 /* GlassBackgroundExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 52373B20E0534928BA438825 /* GlassBackgroundExtension.swift */; };
+		B4CD5FF14B9C4449A9761B1E /* GlassBottomAccessory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78AE5DD598F34DD5AFBC445F /* GlassBottomAccessory.swift */; };
+		DD5053D38E334124ADC33194 /* GlassButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E59E4F6554A44A1B53455A5 /* GlassButton.swift */; };
+		100492E254E94F55A9145F0F /* GlassCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E3564FFBFF0413C9CCCF356 /* GlassCard.swift */; };
+		FB14899DEB554D4D96906090 /* GlassColorContrast.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AA61BA10B924861ACCF9812 /* GlassColorContrast.swift */; };
+		D6E5070906DC4DD2A21FA687 /* GlassEffectContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32FBDC424914035B31B724E /* GlassEffectContainer.swift */; };
+		1B346C664A1E45989C3BF88C /* GlassMaterial.swift in Sources */ = {isa = PBXBuildFile; fileRef = 153E4B657486490BA95E1C28 /* GlassMaterial.swift */; };
+		EE0B9140C493442DB2B6A1A9 /* GlassMorphUnion.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4247163E4B4469695ED9858 /* GlassMorphUnion.swift */; };
+		3E4E24ED888544F4847D2B17 /* GlassStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBF78A4E390E4B9A9AA3867C /* GlassStyle.swift */; };
+		23A0380F2C8F49739E8B72E0 /* GlassTabBar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3BBCBAC294D2430999726543 /* GlassTabBar.swift */; };
+		BA556E7F7D9A4F61887FA170 /* GlassTintKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA45519D8B74A20B241881C /* GlassTintKey.swift */; };
+		1E169572135C47C5B658BE04 /* View+Glass.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565A59C60C6D417F8A24B2CE /* View+Glass.swift */; };
+		532B1F6A00604208B3C54548 /* PersistentLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A3BC8F022F746349C6717AA /* PersistentLog.swift */; };
+		BA5E61AE5D6E449A99D941A9 /* ProcessingAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57C538C54E3D4C18806BCCA8 /* ProcessingAnimation.swift */; };
+		08B0A9F03F4A41ADBEB9F4C2 /* ProcessingWaveform.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E8EC4216BD64F1883DF644A /* ProcessingWaveform.swift */; };
+		3E4CEF3A0DE04E80B26BD005 /* SmartModeBadge.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE66D881F51145838B6A30B2 /* SmartModeBadge.swift */; };
+		D8D78166AB8E4341AFE7EDA6 /* WaveformAnimation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB3415126CBE4077933A459C /* WaveformAnimation.swift */; };
+		006DA54CE9E14D82958BE00B /* TranscriptionHistoryStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = E96EFD8FDAD24C52A2F34FB1 /* TranscriptionHistoryStore.swift */; };
+		5D20116902094F6F876D6A3B /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */; };
+		4D9B511D4F2F44298B574217 /* HuggingFaceSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */; };
+		CBA8C63E4C1747F79DCAE986 /* LiteRTGemmaEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */; };
+		7157D181DE244351BCBEC05C /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691248590BC74ECF98850CE1 /* ModelInfo.swift */; };
+		90998E68CA544F159DEFAA8B /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35FB344BACD44ECA15148E9 /* ModelManager.swift */; };
+		CC7EF58B8E2840F4BA458F58 /* ModelRepoDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */; };
+		A097D850AB474787A85E10A5 /* SpeechModelEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17E195FB3017441E91C439C3 /* SpeechModelEngine.swift */; };
+		95CB13292D4B47CFAE41F298 /* LiveTranscriptionCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDCA152EA0E54E7E9DD24B62 /* LiveTranscriptionCoordinator.swift */; };
+		DDB1AF1BB5524F63B34AACBA /* TranscriptCleaner.swift in Sources */ = {isa = PBXBuildFile; fileRef = BECDF004CA0C46CE8CFF326F /* TranscriptCleaner.swift */; };
+		A4D77B8EF3494B7EB5ED3CCB /* TranscriptionLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCD8E2159A344F1885D8EE69 /* TranscriptionLine.swift */; };
+		904DB3E987CD43A9AE60D6CB /* AboutAttributionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8731D83F7BE34F6F87ED4304 /* AboutAttributionView.swift */; };
+		EABCCC7DA6F94393827FBEDA /* HistoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36903DACF44F43198E2B8442 /* HistoryView.swift */; };
+		ADC3B864412746D281FD091C /* HomeRecordingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3465F7DDFBE44EF193EC6E1B /* HomeRecordingView.swift */; };
+		D725815527D44168999EB5D4 /* ModelCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 281ECDBC71274E3CA6ED780C /* ModelCardView.swift */; };
+		709F1BE7977746D0935B1106 /* ModelManagerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD15678BC1F47918FA290AB /* ModelManagerView.swift */; };
+		001A1FE59FFB4ADE9A1BE963 /* PostStopResultCardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAADFEAAC7AA4376BDCB9EE0 /* PostStopResultCardView.swift */; };
+		9B5E7DDD40EA48D3AC8F2772 /* RealtimeTranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7421E2ED6CF4DCF8193985F /* RealtimeTranscriptView.swift */; };
+		3F1EAB323EE148E1A9CCB724 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBCA8AFD46EA488E90422F56 /* SettingsView.swift */; };
+		5D04E47957C7446FAFF9BE4D /* TranscriptionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFFCFB8F7644440B305394B /* TranscriptionDetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		CFA1140C430449D7A11B794E /* GemmaTranscribe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GemmaTranscribe.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		2253C148B2B34386A9DD088D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		8D46112C2A3D4052BFC9E0EC /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppConfig.swift"; path = "GemmaTranscribe/App/AppConfig.swift"; sourceTree = "<group>"; };
-		BDFBF222BBFE422CB9EC0A45 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ContentView.swift"; path = "GemmaTranscribe/App/ContentView.swift"; sourceTree = "<group>"; };
-		67D423B4B9E34B94B57E6BF4 /* DictationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "DictationStatus.swift"; path = "GemmaTranscribe/App/DictationStatus.swift"; sourceTree = "<group>"; };
-		1A95A147A6D14CA4A3792CC8 /* GemmaTranscribeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GemmaTranscribeApp.swift"; path = "GemmaTranscribe/App/GemmaTranscribeApp.swift"; sourceTree = "<group>"; };
-		0B88CEBBA48B492D90D19690 /* AudioSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AudioSessionCoordinator.swift"; path = "GemmaTranscribe/Audio/AudioSessionCoordinator.swift"; sourceTree = "<group>"; };
-		FE2C5DCA255F4FBE8A4B9F5B /* RecordingWaveformStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RecordingWaveformStore.swift"; path = "GemmaTranscribe/Audio/RecordingWaveformStore.swift"; sourceTree = "<group>"; };
-		B8DA58EDC07548278D4C7590 /* UnifiedAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "UnifiedAudioCapture.swift"; path = "GemmaTranscribe/Audio/UnifiedAudioCapture.swift"; sourceTree = "<group>"; };
-		B3BDDB185EEF4FC28C8AED72 /* CloudflareBrainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CloudflareBrainService.swift"; path = "GemmaTranscribe/Cloudflare/CloudflareBrainService.swift"; sourceTree = "<group>"; };
-		F4CE5FA916214C89B7DFECBF /* CloudflareResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CloudflareResponse.swift"; path = "GemmaTranscribe/Cloudflare/CloudflareResponse.swift"; sourceTree = "<group>"; };
-		826FE9E264EF4E078A14C2FC /* AnimatedMicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AnimatedMicButton.swift"; path = "GemmaTranscribe/Design/AnimatedMicButton.swift"; sourceTree = "<group>"; };
-		03B8421AB9E54DA5A2ED07BD /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppColors.swift"; path = "GemmaTranscribe/Design/AppColors.swift"; sourceTree = "<group>"; };
-		0DD4867BC61E42D6B67FF47D /* BrandWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "BrandWaveform.swift"; path = "GemmaTranscribe/Design/BrandWaveform.swift"; sourceTree = "<group>"; };
-		79005A97E7C14083B8E6EC22 /* DictusColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "DictusColors.swift"; path = "GemmaTranscribe/Design/DictusColors.swift"; sourceTree = "<group>"; };
-		3BC1583374294044A6D2062D /* GlassModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassModifier.swift"; path = "GemmaTranscribe/Design/GlassModifier.swift"; sourceTree = "<group>"; };
-		2EEA7825BE34461D910BD1A8 /* GlassBackgroundExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassBackgroundExtension.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassBackgroundExtension.swift"; sourceTree = "<group>"; };
-		9036248E7A2B48F3964FC525 /* GlassBottomAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassBottomAccessory.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassBottomAccessory.swift"; sourceTree = "<group>"; };
-		7AA331DA8F59459B96AF7656 /* GlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassButton.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassButton.swift"; sourceTree = "<group>"; };
-		78F42CD6E78B44B19FCDD170 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassCard.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassCard.swift"; sourceTree = "<group>"; };
-		ACF706F8B6C241F08D051519 /* GlassColorContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassColorContrast.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassColorContrast.swift"; sourceTree = "<group>"; };
-		0457D15F28D047DDB3A82DF5 /* GlassEffectContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassEffectContainer.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassEffectContainer.swift"; sourceTree = "<group>"; };
-		52D485EC028849259488147C /* GlassMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassMaterial.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassMaterial.swift"; sourceTree = "<group>"; };
-		4138711334B34C14914D74D1 /* GlassMorphUnion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassMorphUnion.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassMorphUnion.swift"; sourceTree = "<group>"; };
-		7601BA0571F9436ABEDFA7B9 /* GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassStyle.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassStyle.swift"; sourceTree = "<group>"; };
-		01FB513AA3FD4F26B42EE209 /* GlassTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassTabBar.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassTabBar.swift"; sourceTree = "<group>"; };
-		1F065B5BB26545CE91DE5386 /* GlassTintKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassTintKey.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassTintKey.swift"; sourceTree = "<group>"; };
-		693CA59F15D64D44894A6660 /* View+Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "View+Glass.swift"; path = "GemmaTranscribe/Design/LiquidGlass/View+Glass.swift"; sourceTree = "<group>"; };
-		37566159A11649EC8C31B968 /* PersistentLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PersistentLog.swift"; path = "GemmaTranscribe/Design/PersistentLog.swift"; sourceTree = "<group>"; };
-		B076E35112B641AA80AF6A9E /* ProcessingAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ProcessingAnimation.swift"; path = "GemmaTranscribe/Design/ProcessingAnimation.swift"; sourceTree = "<group>"; };
-		BF4CE1AFC81440409536D40E /* ProcessingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ProcessingWaveform.swift"; path = "GemmaTranscribe/Design/ProcessingWaveform.swift"; sourceTree = "<group>"; };
-		7405E97629F8440099677273 /* SmartModeBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SmartModeBadge.swift"; path = "GemmaTranscribe/Design/SmartModeBadge.swift"; sourceTree = "<group>"; };
-		3015F2B0A88043E9B99F9F7C /* WaveformAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "WaveformAnimation.swift"; path = "GemmaTranscribe/Design/WaveformAnimation.swift"; sourceTree = "<group>"; };
-		90A9A8A1EB83415EB111A6E7 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionHistoryStore.swift"; path = "GemmaTranscribe/History/TranscriptionHistoryStore.swift"; sourceTree = "<group>"; };
-		903DBE1E6B274135BD609149 /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionRecord.swift"; path = "GemmaTranscribe/History/TranscriptionRecord.swift"; sourceTree = "<group>"; };
-		8A3CCA79819746FB86E094E2 /* HuggingFaceSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HuggingFaceSearchService.swift"; path = "GemmaTranscribe/Models/HuggingFaceSearchService.swift"; sourceTree = "<group>"; };
-		320AA8E0260442B9A54635A5 /* LiteRTGemmaEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiteRTGemmaEngine.swift"; path = "GemmaTranscribe/Models/LiteRTGemmaEngine.swift"; sourceTree = "<group>"; };
-		6A7D366BA5D740AFB556AE96 /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelInfo.swift"; path = "GemmaTranscribe/Models/ModelInfo.swift"; sourceTree = "<group>"; };
-		DC1E6EAE07C043C4941FB5CA /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelManager.swift"; path = "GemmaTranscribe/Models/ModelManager.swift"; sourceTree = "<group>"; };
-		E5E49DC784B44079AB7EC7AA /* ModelRepoDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelRepoDownloader.swift"; path = "GemmaTranscribe/Models/ModelRepoDownloader.swift"; sourceTree = "<group>"; };
-		756694E69CAE43E18FF1FF8D /* SpeechModelEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SpeechModelEngine.swift"; path = "GemmaTranscribe/Models/SpeechModelEngine.swift"; sourceTree = "<group>"; };
-		9830839D912741039725102B /* LiveTranscriptionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiveTranscriptionCoordinator.swift"; path = "GemmaTranscribe/Transcription/LiveTranscriptionCoordinator.swift"; sourceTree = "<group>"; };
-		260528DCAD1049AC881F3807 /* TranscriptCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptCleaner.swift"; path = "GemmaTranscribe/Transcription/TranscriptCleaner.swift"; sourceTree = "<group>"; };
-		E9FDBA354D064A26A2EABAD5 /* TranscriptionLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionLine.swift"; path = "GemmaTranscribe/Transcription/TranscriptionLine.swift"; sourceTree = "<group>"; };
-		A3EBE418F5D14EB5A2945712 /* AboutAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AboutAttributionView.swift"; path = "GemmaTranscribe/Views/AboutAttributionView.swift"; sourceTree = "<group>"; };
-		9013380F1F564A2F831CD739 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HistoryView.swift"; path = "GemmaTranscribe/Views/HistoryView.swift"; sourceTree = "<group>"; };
-		8CEA0F34DF9043F29B6D5CB2 /* HomeRecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HomeRecordingView.swift"; path = "GemmaTranscribe/Views/HomeRecordingView.swift"; sourceTree = "<group>"; };
-		770FF1FC97DF4818B97C72A5 /* ModelCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelCardView.swift"; path = "GemmaTranscribe/Views/ModelCardView.swift"; sourceTree = "<group>"; };
-		282FE96B4E8F4ED4BF35AD0A /* ModelManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelManagerView.swift"; path = "GemmaTranscribe/Views/ModelManagerView.swift"; sourceTree = "<group>"; };
-		A66D644A16704FD4A5A5550A /* PostStopResultCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PostStopResultCardView.swift"; path = "GemmaTranscribe/Views/PostStopResultCardView.swift"; sourceTree = "<group>"; };
-		E9AF60098DF24798ACC184C5 /* RealtimeTranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RealtimeTranscriptView.swift"; path = "GemmaTranscribe/Views/RealtimeTranscriptView.swift"; sourceTree = "<group>"; };
-		8F32E5307F7440D8888AF3F7 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SettingsView.swift"; path = "GemmaTranscribe/Views/SettingsView.swift"; sourceTree = "<group>"; };
-		7CC9E6DD55BE476CA7183B06 /* TranscriptionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionDetailView.swift"; path = "GemmaTranscribe/Views/TranscriptionDetailView.swift"; sourceTree = "<group>"; };
+		6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GemmaTranscribe.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE5883442D564CDE9498152C /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = "GemmaTranscribe/Resources/Assets.xcassets"; sourceTree = "<group>"; };
+		A8E9CD96DC044ADC9A0756D9 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppConfig.swift"; path = "GemmaTranscribe/App/AppConfig.swift"; sourceTree = "<group>"; };
+		29018943F50F499EA75090C3 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ContentView.swift"; path = "GemmaTranscribe/App/ContentView.swift"; sourceTree = "<group>"; };
+		70CCD10E105C44C4AE8E7828 /* DictationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "DictationStatus.swift"; path = "GemmaTranscribe/App/DictationStatus.swift"; sourceTree = "<group>"; };
+		02D2FC053ADB44EB9A3909E1 /* GemmaTranscribeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GemmaTranscribeApp.swift"; path = "GemmaTranscribe/App/GemmaTranscribeApp.swift"; sourceTree = "<group>"; };
+		3B4583D4B490426D8075B547 /* AudioSessionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AudioSessionCoordinator.swift"; path = "GemmaTranscribe/Audio/AudioSessionCoordinator.swift"; sourceTree = "<group>"; };
+		E9380AC1D10E4BDEA0586F57 /* RecordingWaveformStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RecordingWaveformStore.swift"; path = "GemmaTranscribe/Audio/RecordingWaveformStore.swift"; sourceTree = "<group>"; };
+		B39E8496DEA3499BB4A04E31 /* UnifiedAudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "UnifiedAudioCapture.swift"; path = "GemmaTranscribe/Audio/UnifiedAudioCapture.swift"; sourceTree = "<group>"; };
+		4CBF39865CFF4DE88B8E8E0B /* CloudflareBrainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CloudflareBrainService.swift"; path = "GemmaTranscribe/Cloudflare/CloudflareBrainService.swift"; sourceTree = "<group>"; };
+		B073DCF552D749A1A5DEF41D /* CloudflareResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "CloudflareResponse.swift"; path = "GemmaTranscribe/Cloudflare/CloudflareResponse.swift"; sourceTree = "<group>"; };
+		85112A2B036B48C298506230 /* AnimatedMicButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AnimatedMicButton.swift"; path = "GemmaTranscribe/Design/AnimatedMicButton.swift"; sourceTree = "<group>"; };
+		9BA741D73AED448789084852 /* AppColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppColors.swift"; path = "GemmaTranscribe/Design/AppColors.swift"; sourceTree = "<group>"; };
+		9F0D83649463409EB9E66390 /* BrandWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "BrandWaveform.swift"; path = "GemmaTranscribe/Design/BrandWaveform.swift"; sourceTree = "<group>"; };
+		4604AAE15D4D42BD8D5311D8 /* DictusColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "DictusColors.swift"; path = "GemmaTranscribe/Design/DictusColors.swift"; sourceTree = "<group>"; };
+		93F39AB283694845AF779FCA /* GlassModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassModifier.swift"; path = "GemmaTranscribe/Design/GlassModifier.swift"; sourceTree = "<group>"; };
+		52373B20E0534928BA438825 /* GlassBackgroundExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassBackgroundExtension.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassBackgroundExtension.swift"; sourceTree = "<group>"; };
+		78AE5DD598F34DD5AFBC445F /* GlassBottomAccessory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassBottomAccessory.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassBottomAccessory.swift"; sourceTree = "<group>"; };
+		9E59E4F6554A44A1B53455A5 /* GlassButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassButton.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassButton.swift"; sourceTree = "<group>"; };
+		5E3564FFBFF0413C9CCCF356 /* GlassCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassCard.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassCard.swift"; sourceTree = "<group>"; };
+		4AA61BA10B924861ACCF9812 /* GlassColorContrast.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassColorContrast.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassColorContrast.swift"; sourceTree = "<group>"; };
+		A32FBDC424914035B31B724E /* GlassEffectContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassEffectContainer.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassEffectContainer.swift"; sourceTree = "<group>"; };
+		153E4B657486490BA95E1C28 /* GlassMaterial.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassMaterial.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassMaterial.swift"; sourceTree = "<group>"; };
+		C4247163E4B4469695ED9858 /* GlassMorphUnion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassMorphUnion.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassMorphUnion.swift"; sourceTree = "<group>"; };
+		DBF78A4E390E4B9A9AA3867C /* GlassStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassStyle.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassStyle.swift"; sourceTree = "<group>"; };
+		3BBCBAC294D2430999726543 /* GlassTabBar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassTabBar.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassTabBar.swift"; sourceTree = "<group>"; };
+		3AA45519D8B74A20B241881C /* GlassTintKey.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "GlassTintKey.swift"; path = "GemmaTranscribe/Design/LiquidGlass/GlassTintKey.swift"; sourceTree = "<group>"; };
+		565A59C60C6D417F8A24B2CE /* View+Glass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "View+Glass.swift"; path = "GemmaTranscribe/Design/LiquidGlass/View+Glass.swift"; sourceTree = "<group>"; };
+		7A3BC8F022F746349C6717AA /* PersistentLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PersistentLog.swift"; path = "GemmaTranscribe/Design/PersistentLog.swift"; sourceTree = "<group>"; };
+		57C538C54E3D4C18806BCCA8 /* ProcessingAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ProcessingAnimation.swift"; path = "GemmaTranscribe/Design/ProcessingAnimation.swift"; sourceTree = "<group>"; };
+		6E8EC4216BD64F1883DF644A /* ProcessingWaveform.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ProcessingWaveform.swift"; path = "GemmaTranscribe/Design/ProcessingWaveform.swift"; sourceTree = "<group>"; };
+		BE66D881F51145838B6A30B2 /* SmartModeBadge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SmartModeBadge.swift"; path = "GemmaTranscribe/Design/SmartModeBadge.swift"; sourceTree = "<group>"; };
+		DB3415126CBE4077933A459C /* WaveformAnimation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "WaveformAnimation.swift"; path = "GemmaTranscribe/Design/WaveformAnimation.swift"; sourceTree = "<group>"; };
+		E96EFD8FDAD24C52A2F34FB1 /* TranscriptionHistoryStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionHistoryStore.swift"; path = "GemmaTranscribe/History/TranscriptionHistoryStore.swift"; sourceTree = "<group>"; };
+		547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionRecord.swift"; path = "GemmaTranscribe/History/TranscriptionRecord.swift"; sourceTree = "<group>"; };
+		63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HuggingFaceSearchService.swift"; path = "GemmaTranscribe/Models/HuggingFaceSearchService.swift"; sourceTree = "<group>"; };
+		C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiteRTGemmaEngine.swift"; path = "GemmaTranscribe/Models/LiteRTGemmaEngine.swift"; sourceTree = "<group>"; };
+		691248590BC74ECF98850CE1 /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelInfo.swift"; path = "GemmaTranscribe/Models/ModelInfo.swift"; sourceTree = "<group>"; };
+		F35FB344BACD44ECA15148E9 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelManager.swift"; path = "GemmaTranscribe/Models/ModelManager.swift"; sourceTree = "<group>"; };
+		C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelRepoDownloader.swift"; path = "GemmaTranscribe/Models/ModelRepoDownloader.swift"; sourceTree = "<group>"; };
+		17E195FB3017441E91C439C3 /* SpeechModelEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SpeechModelEngine.swift"; path = "GemmaTranscribe/Models/SpeechModelEngine.swift"; sourceTree = "<group>"; };
+		CDCA152EA0E54E7E9DD24B62 /* LiveTranscriptionCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiveTranscriptionCoordinator.swift"; path = "GemmaTranscribe/Transcription/LiveTranscriptionCoordinator.swift"; sourceTree = "<group>"; };
+		BECDF004CA0C46CE8CFF326F /* TranscriptCleaner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptCleaner.swift"; path = "GemmaTranscribe/Transcription/TranscriptCleaner.swift"; sourceTree = "<group>"; };
+		BCD8E2159A344F1885D8EE69 /* TranscriptionLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionLine.swift"; path = "GemmaTranscribe/Transcription/TranscriptionLine.swift"; sourceTree = "<group>"; };
+		8731D83F7BE34F6F87ED4304 /* AboutAttributionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AboutAttributionView.swift"; path = "GemmaTranscribe/Views/AboutAttributionView.swift"; sourceTree = "<group>"; };
+		36903DACF44F43198E2B8442 /* HistoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HistoryView.swift"; path = "GemmaTranscribe/Views/HistoryView.swift"; sourceTree = "<group>"; };
+		3465F7DDFBE44EF193EC6E1B /* HomeRecordingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HomeRecordingView.swift"; path = "GemmaTranscribe/Views/HomeRecordingView.swift"; sourceTree = "<group>"; };
+		281ECDBC71274E3CA6ED780C /* ModelCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelCardView.swift"; path = "GemmaTranscribe/Views/ModelCardView.swift"; sourceTree = "<group>"; };
+		1BD15678BC1F47918FA290AB /* ModelManagerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelManagerView.swift"; path = "GemmaTranscribe/Views/ModelManagerView.swift"; sourceTree = "<group>"; };
+		FAADFEAAC7AA4376BDCB9EE0 /* PostStopResultCardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "PostStopResultCardView.swift"; path = "GemmaTranscribe/Views/PostStopResultCardView.swift"; sourceTree = "<group>"; };
+		E7421E2ED6CF4DCF8193985F /* RealtimeTranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "RealtimeTranscriptView.swift"; path = "GemmaTranscribe/Views/RealtimeTranscriptView.swift"; sourceTree = "<group>"; };
+		DBCA8AFD46EA488E90422F56 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "SettingsView.swift"; path = "GemmaTranscribe/Views/SettingsView.swift"; sourceTree = "<group>"; };
+		1AFFCFB8F7644440B305394B /* TranscriptionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionDetailView.swift"; path = "GemmaTranscribe/Views/TranscriptionDetailView.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		63025042762345B1BED3D444 /* Frameworks */ = {
+		6FF345CA45064D6697444366 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -128,77 +128,77 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		941C8E085326490BB054F0D3 = {
+		9948BAAFE70C40E093C13F49 = {
 			isa = PBXGroup;
 			children = (
-				9A13296AE1B74625B5F4690E /* GemmaTranscribe */,
-				657735061A084FD59331A53C /* Products */,
+				2636A64FB5D841A28565E441 /* GemmaTranscribe */,
+				BF017CC7D156443397DD9034 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		657735061A084FD59331A53C /* Products */ = {
+		BF017CC7D156443397DD9034 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CFA1140C430449D7A11B794E /* GemmaTranscribe.app */,
+				6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		9A13296AE1B74625B5F4690E /* GemmaTranscribe */ = {
+		2636A64FB5D841A28565E441 /* GemmaTranscribe */ = {
 			isa = PBXGroup;
 			children = (
-				8D46112C2A3D4052BFC9E0EC /* AppConfig.swift */,
-				BDFBF222BBFE422CB9EC0A45 /* ContentView.swift */,
-				67D423B4B9E34B94B57E6BF4 /* DictationStatus.swift */,
-				1A95A147A6D14CA4A3792CC8 /* GemmaTranscribeApp.swift */,
-				0B88CEBBA48B492D90D19690 /* AudioSessionCoordinator.swift */,
-				FE2C5DCA255F4FBE8A4B9F5B /* RecordingWaveformStore.swift */,
-				B8DA58EDC07548278D4C7590 /* UnifiedAudioCapture.swift */,
-				B3BDDB185EEF4FC28C8AED72 /* CloudflareBrainService.swift */,
-				F4CE5FA916214C89B7DFECBF /* CloudflareResponse.swift */,
-				826FE9E264EF4E078A14C2FC /* AnimatedMicButton.swift */,
-				03B8421AB9E54DA5A2ED07BD /* AppColors.swift */,
-				0DD4867BC61E42D6B67FF47D /* BrandWaveform.swift */,
-				79005A97E7C14083B8E6EC22 /* DictusColors.swift */,
-				3BC1583374294044A6D2062D /* GlassModifier.swift */,
-				2EEA7825BE34461D910BD1A8 /* GlassBackgroundExtension.swift */,
-				9036248E7A2B48F3964FC525 /* GlassBottomAccessory.swift */,
-				7AA331DA8F59459B96AF7656 /* GlassButton.swift */,
-				78F42CD6E78B44B19FCDD170 /* GlassCard.swift */,
-				ACF706F8B6C241F08D051519 /* GlassColorContrast.swift */,
-				0457D15F28D047DDB3A82DF5 /* GlassEffectContainer.swift */,
-				52D485EC028849259488147C /* GlassMaterial.swift */,
-				4138711334B34C14914D74D1 /* GlassMorphUnion.swift */,
-				7601BA0571F9436ABEDFA7B9 /* GlassStyle.swift */,
-				01FB513AA3FD4F26B42EE209 /* GlassTabBar.swift */,
-				1F065B5BB26545CE91DE5386 /* GlassTintKey.swift */,
-				693CA59F15D64D44894A6660 /* View+Glass.swift */,
-				37566159A11649EC8C31B968 /* PersistentLog.swift */,
-				B076E35112B641AA80AF6A9E /* ProcessingAnimation.swift */,
-				BF4CE1AFC81440409536D40E /* ProcessingWaveform.swift */,
-				7405E97629F8440099677273 /* SmartModeBadge.swift */,
-				3015F2B0A88043E9B99F9F7C /* WaveformAnimation.swift */,
-				90A9A8A1EB83415EB111A6E7 /* TranscriptionHistoryStore.swift */,
-				903DBE1E6B274135BD609149 /* TranscriptionRecord.swift */,
-				8A3CCA79819746FB86E094E2 /* HuggingFaceSearchService.swift */,
-				320AA8E0260442B9A54635A5 /* LiteRTGemmaEngine.swift */,
-				6A7D366BA5D740AFB556AE96 /* ModelInfo.swift */,
-				DC1E6EAE07C043C4941FB5CA /* ModelManager.swift */,
-				E5E49DC784B44079AB7EC7AA /* ModelRepoDownloader.swift */,
-				756694E69CAE43E18FF1FF8D /* SpeechModelEngine.swift */,
-				9830839D912741039725102B /* LiveTranscriptionCoordinator.swift */,
-				260528DCAD1049AC881F3807 /* TranscriptCleaner.swift */,
-				E9FDBA354D064A26A2EABAD5 /* TranscriptionLine.swift */,
-				A3EBE418F5D14EB5A2945712 /* AboutAttributionView.swift */,
-				9013380F1F564A2F831CD739 /* HistoryView.swift */,
-				8CEA0F34DF9043F29B6D5CB2 /* HomeRecordingView.swift */,
-				770FF1FC97DF4818B97C72A5 /* ModelCardView.swift */,
-				282FE96B4E8F4ED4BF35AD0A /* ModelManagerView.swift */,
-				A66D644A16704FD4A5A5550A /* PostStopResultCardView.swift */,
-				E9AF60098DF24798ACC184C5 /* RealtimeTranscriptView.swift */,
-				8F32E5307F7440D8888AF3F7 /* SettingsView.swift */,
-				7CC9E6DD55BE476CA7183B06 /* TranscriptionDetailView.swift */,
-				2253C148B2B34386A9DD088D /* Assets.xcassets */,
+				A8E9CD96DC044ADC9A0756D9 /* AppConfig.swift */,
+				29018943F50F499EA75090C3 /* ContentView.swift */,
+				70CCD10E105C44C4AE8E7828 /* DictationStatus.swift */,
+				02D2FC053ADB44EB9A3909E1 /* GemmaTranscribeApp.swift */,
+				3B4583D4B490426D8075B547 /* AudioSessionCoordinator.swift */,
+				E9380AC1D10E4BDEA0586F57 /* RecordingWaveformStore.swift */,
+				B39E8496DEA3499BB4A04E31 /* UnifiedAudioCapture.swift */,
+				4CBF39865CFF4DE88B8E8E0B /* CloudflareBrainService.swift */,
+				B073DCF552D749A1A5DEF41D /* CloudflareResponse.swift */,
+				85112A2B036B48C298506230 /* AnimatedMicButton.swift */,
+				9BA741D73AED448789084852 /* AppColors.swift */,
+				9F0D83649463409EB9E66390 /* BrandWaveform.swift */,
+				4604AAE15D4D42BD8D5311D8 /* DictusColors.swift */,
+				93F39AB283694845AF779FCA /* GlassModifier.swift */,
+				52373B20E0534928BA438825 /* GlassBackgroundExtension.swift */,
+				78AE5DD598F34DD5AFBC445F /* GlassBottomAccessory.swift */,
+				9E59E4F6554A44A1B53455A5 /* GlassButton.swift */,
+				5E3564FFBFF0413C9CCCF356 /* GlassCard.swift */,
+				4AA61BA10B924861ACCF9812 /* GlassColorContrast.swift */,
+				A32FBDC424914035B31B724E /* GlassEffectContainer.swift */,
+				153E4B657486490BA95E1C28 /* GlassMaterial.swift */,
+				C4247163E4B4469695ED9858 /* GlassMorphUnion.swift */,
+				DBF78A4E390E4B9A9AA3867C /* GlassStyle.swift */,
+				3BBCBAC294D2430999726543 /* GlassTabBar.swift */,
+				3AA45519D8B74A20B241881C /* GlassTintKey.swift */,
+				565A59C60C6D417F8A24B2CE /* View+Glass.swift */,
+				7A3BC8F022F746349C6717AA /* PersistentLog.swift */,
+				57C538C54E3D4C18806BCCA8 /* ProcessingAnimation.swift */,
+				6E8EC4216BD64F1883DF644A /* ProcessingWaveform.swift */,
+				BE66D881F51145838B6A30B2 /* SmartModeBadge.swift */,
+				DB3415126CBE4077933A459C /* WaveformAnimation.swift */,
+				E96EFD8FDAD24C52A2F34FB1 /* TranscriptionHistoryStore.swift */,
+				547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */,
+				63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */,
+				C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */,
+				691248590BC74ECF98850CE1 /* ModelInfo.swift */,
+				F35FB344BACD44ECA15148E9 /* ModelManager.swift */,
+				C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */,
+				17E195FB3017441E91C439C3 /* SpeechModelEngine.swift */,
+				CDCA152EA0E54E7E9DD24B62 /* LiveTranscriptionCoordinator.swift */,
+				BECDF004CA0C46CE8CFF326F /* TranscriptCleaner.swift */,
+				BCD8E2159A344F1885D8EE69 /* TranscriptionLine.swift */,
+				8731D83F7BE34F6F87ED4304 /* AboutAttributionView.swift */,
+				36903DACF44F43198E2B8442 /* HistoryView.swift */,
+				3465F7DDFBE44EF193EC6E1B /* HomeRecordingView.swift */,
+				281ECDBC71274E3CA6ED780C /* ModelCardView.swift */,
+				1BD15678BC1F47918FA290AB /* ModelManagerView.swift */,
+				FAADFEAAC7AA4376BDCB9EE0 /* PostStopResultCardView.swift */,
+				E7421E2ED6CF4DCF8193985F /* RealtimeTranscriptView.swift */,
+				DBCA8AFD46EA488E90422F56 /* SettingsView.swift */,
+				1AFFCFB8F7644440B305394B /* TranscriptionDetailView.swift */,
+				CE5883442D564CDE9498152C /* Assets.xcassets */,
 			);
 			name = GemmaTranscribe;
 			sourceTree = "<group>";
@@ -206,13 +206,13 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		618CE661A11246F0B0C8E968 /* GemmaTranscribe */ = {
+		A970C100ED9C41FFA8CBBE27 /* GemmaTranscribe */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 739087066AB544A4AD74A843 /* Build configuration list for PBXNativeTarget "GemmaTranscribe" */;
+			buildConfigurationList = 111FD75EDE4348BE80498558 /* Build configuration list for PBXNativeTarget "GemmaTranscribe" */;
 			buildPhases = (
-				A949AF7EDA2D42AFBE0B301B /* Sources */,
-				63025042762345B1BED3D444 /* Frameworks */,
-				273B8E6AD1044B0888F5F152 /* Resources */,
+				E3917CF70E5F49B1BB1AEA84 /* Sources */,
+				6FF345CA45064D6697444366 /* Frameworks */,
+				AE2773F042EB416E90D68FEB /* Resources */,
 			);
 			buildRules = (
 			);
@@ -220,25 +220,25 @@
 			);
 			name = GemmaTranscribe;
 			productName = GemmaTranscribe;
-			productReference = CFA1140C430449D7A11B794E /* GemmaTranscribe.app */;
+			productReference = 6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		3DA883A560544D0E9127BC10 /* Project object */ = {
+		5416A4877132468CB777D602 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1600;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
-					618CE661A11246F0B0C8E968 = {
+					A970C100ED9C41FFA8CBBE27 = {
 						CreatedOnToolsVersion = 16.0;
 					};
 				};
 			};
-			buildConfigurationList = 4004D9BD246D4CA7AC62958E /* Build configuration list for PBXProject "GemmaTranscribe" */;
+			buildConfigurationList = B00F69ABB9264F4A85D85EC6 /* Build configuration list for PBXProject "GemmaTranscribe" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -246,90 +246,90 @@
 				en,
 				Base,
 			);
-			mainGroup = 941C8E085326490BB054F0D3;
-			productRefGroup = 657735061A084FD59331A53C /* Products */;
+			mainGroup = 9948BAAFE70C40E093C13F49;
+			productRefGroup = BF017CC7D156443397DD9034 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				618CE661A11246F0B0C8E968 /* GemmaTranscribe */,
+				A970C100ED9C41FFA8CBBE27 /* GemmaTranscribe */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		273B8E6AD1044B0888F5F152 /* Resources */ = {
+		AE2773F042EB416E90D68FEB /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				AC9752F788CA49DDA4162F2B /* Assets.xcassets in Resources */,
+				07798471F8584A35858302E3 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		A949AF7EDA2D42AFBE0B301B /* Sources */ = {
+		E3917CF70E5F49B1BB1AEA84 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				957AA55567C9485F8BEEE74E /* AppConfig.swift in Sources */,
-				F3CE4F5BA4D747A6BBFE1952 /* ContentView.swift in Sources */,
-				DF8AFE5C96124F2BAD5B9470 /* DictationStatus.swift in Sources */,
-				1009C2AC4D284288952416C6 /* GemmaTranscribeApp.swift in Sources */,
-				CD019AB40C9C471980A34FD6 /* AudioSessionCoordinator.swift in Sources */,
-				C81D1512237D4ABA9D4F7BC9 /* RecordingWaveformStore.swift in Sources */,
-				AD7DFCFF6B3144AEBB0A3DD5 /* UnifiedAudioCapture.swift in Sources */,
-				0858EDD2872F4B8081029CCF /* CloudflareBrainService.swift in Sources */,
-				C30B065DC038451A99F4BE72 /* CloudflareResponse.swift in Sources */,
-				2FB50C8D071B44B8AC4E0D59 /* AnimatedMicButton.swift in Sources */,
-				EA4244E1AE164D138E1BB960 /* AppColors.swift in Sources */,
-				E9A23E7968C444B998760DF8 /* BrandWaveform.swift in Sources */,
-				3E8CD7C0DD89417F972B2E8C /* DictusColors.swift in Sources */,
-				53F4555663E1416DB6576CD0 /* GlassModifier.swift in Sources */,
-				A0CE049DF5944AE7A4887DC2 /* GlassBackgroundExtension.swift in Sources */,
-				7B77CD0539BB4F20AFD39AE3 /* GlassBottomAccessory.swift in Sources */,
-				95387A386E594AC1A7B20D47 /* GlassButton.swift in Sources */,
-				067E2E24E61D4E10B3A77F76 /* GlassCard.swift in Sources */,
-				9E298FE720B64D35963413F0 /* GlassColorContrast.swift in Sources */,
-				B501F4FFB8C3445C92AB6C75 /* GlassEffectContainer.swift in Sources */,
-				ABA511E9F1384DD38F020696 /* GlassMaterial.swift in Sources */,
-				FB226C2DD27E44C89762E3DE /* GlassMorphUnion.swift in Sources */,
-				D4CD74E75B9E4645BA07E070 /* GlassStyle.swift in Sources */,
-				9CDBFC424F434781A8DFAE0C /* GlassTabBar.swift in Sources */,
-				EA2CECA9186E4BDD8FE2AF9B /* GlassTintKey.swift in Sources */,
-				FAE330991C6B4316B99B40A1 /* View+Glass.swift in Sources */,
-				8EBE4AF60FED404FAE3AFB1B /* PersistentLog.swift in Sources */,
-				7CAB1C5F37014BE3B92B219F /* ProcessingAnimation.swift in Sources */,
-				1153C0E02B1C4349BCCBFA17 /* ProcessingWaveform.swift in Sources */,
-				61A59C393D8040DEB2F49CC1 /* SmartModeBadge.swift in Sources */,
-				09C9DF5128474A4DB9B67837 /* WaveformAnimation.swift in Sources */,
-				81E94030D5464AF9B89C914A /* TranscriptionHistoryStore.swift in Sources */,
-				25570A0FEFC74D73A77EF490 /* TranscriptionRecord.swift in Sources */,
-				4DA11EEA439E47338EEF7F18 /* HuggingFaceSearchService.swift in Sources */,
-				DABEF7983ECD46D89D2C7CF6 /* LiteRTGemmaEngine.swift in Sources */,
-				9853F87BA3C747A199097AF5 /* ModelInfo.swift in Sources */,
-				B287AEDFD61E4986924B04C0 /* ModelManager.swift in Sources */,
-				BE6754B2D28C42C4BAE146E2 /* ModelRepoDownloader.swift in Sources */,
-				C455B243373C4057AF743EF9 /* SpeechModelEngine.swift in Sources */,
-				6A7D1F4E1824410DA900FAA0 /* LiveTranscriptionCoordinator.swift in Sources */,
-				DE9490139FBA4BF4A93C0815 /* TranscriptCleaner.swift in Sources */,
-				E8A6B209421E45B4B271EDEF /* TranscriptionLine.swift in Sources */,
-				8C5AA198A27C4DAE8A2ABB9F /* AboutAttributionView.swift in Sources */,
-				68DA65FA266144FB84880870 /* HistoryView.swift in Sources */,
-				E740F5DAE5054999B2B2417E /* HomeRecordingView.swift in Sources */,
-				6AF827CF8FB44A229371C200 /* ModelCardView.swift in Sources */,
-				6E017F4460454F16BAB2280E /* ModelManagerView.swift in Sources */,
-				456298C124E14454ADC7745D /* PostStopResultCardView.swift in Sources */,
-				ECDB1A0442D04180BD030F89 /* RealtimeTranscriptView.swift in Sources */,
-				6DDAFAE73CA54AAF9AEDAAC8 /* SettingsView.swift in Sources */,
-				41C7A45D8DD546ECA09B457C /* TranscriptionDetailView.swift in Sources */,
+				B2252313D5024A3F9D447C98 /* AppConfig.swift in Sources */,
+				AFECBCA580234B48AB5704E3 /* ContentView.swift in Sources */,
+				861BFD339FD44DE28F8CD020 /* DictationStatus.swift in Sources */,
+				27BA23C1988741DCBF984500 /* GemmaTranscribeApp.swift in Sources */,
+				030F836EBCA445F8BA0F429A /* AudioSessionCoordinator.swift in Sources */,
+				69507CA0ACA0422A9D72AE91 /* RecordingWaveformStore.swift in Sources */,
+				98CE315F6B6D424F9DA50C35 /* UnifiedAudioCapture.swift in Sources */,
+				A1EB46BCE0834D91B1A2FF53 /* CloudflareBrainService.swift in Sources */,
+				61D75E39ED4548B5BBC644AF /* CloudflareResponse.swift in Sources */,
+				7D2BC99E86F04F3FB439F9C7 /* AnimatedMicButton.swift in Sources */,
+				9EAB4BE4A3F44DD482E99765 /* AppColors.swift in Sources */,
+				953D352200324757882DC28B /* BrandWaveform.swift in Sources */,
+				21EDDC60984B49ECAB8DFD87 /* DictusColors.swift in Sources */,
+				5A2851DACE6340B1BCBE10E5 /* GlassModifier.swift in Sources */,
+				F1B44D3865CD445DA9A13360 /* GlassBackgroundExtension.swift in Sources */,
+				B4CD5FF14B9C4449A9761B1E /* GlassBottomAccessory.swift in Sources */,
+				DD5053D38E334124ADC33194 /* GlassButton.swift in Sources */,
+				100492E254E94F55A9145F0F /* GlassCard.swift in Sources */,
+				FB14899DEB554D4D96906090 /* GlassColorContrast.swift in Sources */,
+				D6E5070906DC4DD2A21FA687 /* GlassEffectContainer.swift in Sources */,
+				1B346C664A1E45989C3BF88C /* GlassMaterial.swift in Sources */,
+				EE0B9140C493442DB2B6A1A9 /* GlassMorphUnion.swift in Sources */,
+				3E4E24ED888544F4847D2B17 /* GlassStyle.swift in Sources */,
+				23A0380F2C8F49739E8B72E0 /* GlassTabBar.swift in Sources */,
+				BA556E7F7D9A4F61887FA170 /* GlassTintKey.swift in Sources */,
+				1E169572135C47C5B658BE04 /* View+Glass.swift in Sources */,
+				532B1F6A00604208B3C54548 /* PersistentLog.swift in Sources */,
+				BA5E61AE5D6E449A99D941A9 /* ProcessingAnimation.swift in Sources */,
+				08B0A9F03F4A41ADBEB9F4C2 /* ProcessingWaveform.swift in Sources */,
+				3E4CEF3A0DE04E80B26BD005 /* SmartModeBadge.swift in Sources */,
+				D8D78166AB8E4341AFE7EDA6 /* WaveformAnimation.swift in Sources */,
+				006DA54CE9E14D82958BE00B /* TranscriptionHistoryStore.swift in Sources */,
+				5D20116902094F6F876D6A3B /* TranscriptionRecord.swift in Sources */,
+				4D9B511D4F2F44298B574217 /* HuggingFaceSearchService.swift in Sources */,
+				CBA8C63E4C1747F79DCAE986 /* LiteRTGemmaEngine.swift in Sources */,
+				7157D181DE244351BCBEC05C /* ModelInfo.swift in Sources */,
+				90998E68CA544F159DEFAA8B /* ModelManager.swift in Sources */,
+				CC7EF58B8E2840F4BA458F58 /* ModelRepoDownloader.swift in Sources */,
+				A097D850AB474787A85E10A5 /* SpeechModelEngine.swift in Sources */,
+				95CB13292D4B47CFAE41F298 /* LiveTranscriptionCoordinator.swift in Sources */,
+				DDB1AF1BB5524F63B34AACBA /* TranscriptCleaner.swift in Sources */,
+				A4D77B8EF3494B7EB5ED3CCB /* TranscriptionLine.swift in Sources */,
+				904DB3E987CD43A9AE60D6CB /* AboutAttributionView.swift in Sources */,
+				EABCCC7DA6F94393827FBEDA /* HistoryView.swift in Sources */,
+				ADC3B864412746D281FD091C /* HomeRecordingView.swift in Sources */,
+				D725815527D44168999EB5D4 /* ModelCardView.swift in Sources */,
+				709F1BE7977746D0935B1106 /* ModelManagerView.swift in Sources */,
+				001A1FE59FFB4ADE9A1BE963 /* PostStopResultCardView.swift in Sources */,
+				9B5E7DDD40EA48D3AC8F2772 /* RealtimeTranscriptView.swift in Sources */,
+				3F1EAB323EE148E1A9CCB724 /* SettingsView.swift in Sources */,
+				5D04E47957C7446FAFF9BE4D /* TranscriptionDetailView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		99CC6CE7A2734B0F8978ACB7 /* Debug */ = {
+		EFD4EE00127B4711AEF2772A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -358,7 +358,7 @@
 			};
 			name = Debug;
 		};
-		74846F8B94E8453384E5BB86 /* Release */ = {
+		C59944B4C12741BDB1713C68 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -381,7 +381,7 @@
 			};
 			name = Release;
 		};
-		10B525F9D26442AB9A524158 /* Debug */ = {
+		61AE3473893343239196F898 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -406,7 +406,7 @@
 			};
 			name = Debug;
 		};
-		69C08A227C044230AEB5D4B3 /* Release */ = {
+		B90214EB3413488D97AEBCCA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -434,25 +434,25 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		4004D9BD246D4CA7AC62958E /* Build configuration list for PBXProject "GemmaTranscribe" */ = {
+		B00F69ABB9264F4A85D85EC6 /* Build configuration list for PBXProject "GemmaTranscribe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				99CC6CE7A2734B0F8978ACB7 /* Debug */,
-				74846F8B94E8453384E5BB86 /* Release */,
+				EFD4EE00127B4711AEF2772A /* Debug */,
+				C59944B4C12741BDB1713C68 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		739087066AB544A4AD74A843 /* Build configuration list for PBXNativeTarget "GemmaTranscribe" */ = {
+		111FD75EDE4348BE80498558 /* Build configuration list for PBXNativeTarget "GemmaTranscribe" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				10B525F9D26442AB9A524158 /* Debug */,
-				69C08A227C044230AEB5D4B3 /* Release */,
+				61AE3473893343239196F898 /* Debug */,
+				B90214EB3413488D97AEBCCA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 3DA883A560544D0E9127BC10 /* Project object */;
+	rootObject = 5416A4877132468CB777D602 /* Project object */;
 }
