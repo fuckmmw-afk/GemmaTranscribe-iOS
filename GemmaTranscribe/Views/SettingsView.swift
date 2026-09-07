@@ -15,9 +15,11 @@ public struct SettingsView: View {
     
     @AppStorage(AppConfig.audioChunkDurationKey) private var chunkDuration: Double = AppConfig.defaultAudioChunkDuration
     @AppStorage(AppConfig.cleanFillersEnabledKey) private var cleanFillers: Bool = true
+    @AppStorage(AppConfig.cloudflareModeKey) private var cloudflareMode: Int = 0 // 0: Direct Workers AI, 1: Custom Worker
     @AppStorage(AppConfig.cloudflareWorkerUrlKey) private var cloudflareUrl: String = AppConfig.defaultCloudflareWorkerUrl
     @AppStorage(AppConfig.cloudflareApiKeyKey) private var cloudflareApiKey: String = ""
     @AppStorage(AppConfig.cloudflareAccountIdKey) private var cloudflareAccountId: String = ""
+    @AppStorage(AppConfig.cloudflareDirectModelKey) private var cloudflareModel: String = AppConfig.defaultCloudflareDirectModel
     @AppStorage(AppConfig.huggingFaceTokenKey) private var huggingFaceToken: String = ""
     
     @State private var showingModelManager = false
@@ -94,30 +96,63 @@ public struct SettingsView: View {
                 // Section: Cloudflare Brain Pipeline & Authentication
                 Section(
                     header: Text("Cloudflare AI & Web Search (После STOP)"),
-                    footer: Text("На Cloudflare отправляется только очищенный текст. Аудио никогда не передается в сеть.")
+                    footer: Text("На Cloudflare отправляется только очищенный текст для структурирования и поиска. Аудио никогда не передается в сеть.")
                 ) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("URL Эндпоинта (Worker или Direct REST API)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        TextField("https://...", text: $cloudflareUrl)
-                            .font(.subheadline)
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
+                    Picker("Тип подключения", selection: $cloudflareMode) {
+                        Text("Direct Workers AI (Прямой API)").tag(0)
+                        Text("Собственный Worker").tag(1)
+                    }
+                    .pickerStyle(.segmented)
+                    
+                    if cloudflareMode == 0 {
+                        // Direct Cloudflare Workers AI
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Account ID (32 символа)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            TextField("например: 6d4f2e2b09179bb2068200d4632caaf2", text: $cloudflareAccountId)
+                                .font(.system(.subheadline, design: .monospaced))
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                                .onChange(of: cloudflareAccountId) { newValue in
+                                    cleanAccountId(newValue)
+                                }
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Модель Cloudflare")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            TextField("@cf/meta/llama-3.1-8b-instruct", text: $cloudflareModel)
+                                .font(.system(.subheadline, design: .monospaced))
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
+                    } else {
+                        // Custom Worker
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("URL Cloudflare Worker")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                            TextField("https://your-worker.workers.dev", text: $cloudflareUrl)
+                                .font(.subheadline)
+                                .autocapitalization(.none)
+                                .disableAutocorrection(true)
+                        }
                     }
                     
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Cloudflare API Key / Bearer Token")
+                        Text("API Token Cloudflare (Bearer)")
                             .font(.caption)
                             .foregroundColor(.secondary)
                         HStack {
                             if isSecureApiKey {
-                                SecureField("Bearer токен доступа", text: $cloudflareApiKey)
+                                SecureField("Cloudflare API Token", text: $cloudflareApiKey)
                                     .font(.subheadline)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
                             } else {
-                                TextField("Bearer токен доступа", text: $cloudflareApiKey)
+                                TextField("Cloudflare API Token", text: $cloudflareApiKey)
                                     .font(.subheadline)
                                     .autocapitalization(.none)
                                     .disableAutocorrection(true)
@@ -131,14 +166,18 @@ public struct SettingsView: View {
                         }
                     }
                     
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Account ID (для Direct REST API)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        TextField("Необязательно (для api.cloudflare.com)", text: $cloudflareAccountId)
-                            .font(.subheadline)
-                            .autocapitalization(.none)
-                            .disableAutocorrection(true)
+                    // Endpoint preview
+                    if let resolved = CloudflareBrainService.resolveEndpoint() {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Активный эндпоинт:")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundColor(.secondary)
+                            Text(resolved.url.absoluteString)
+                                .font(.system(size: 10, design: .monospaced))
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        .padding(.vertical, 2)
                     }
                     
                     Button {
@@ -232,6 +271,19 @@ public struct SettingsView: View {
             .sheet(isPresented: $showingModelManager) {
                 ModelManagerView()
             }
+        }
+    }
+    
+    private func cleanAccountId(_ input: String) {
+        var trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        // If user pasted a full URL like https://api.cloudflare.com/client/v4/accounts/6d4f2e2b09179bb2068200d4632caaf2/ai/
+        if let range = trimmed.range(of: "(?<=accounts/)[a-fA-F0-9]{32}", options: .regularExpression) {
+            trimmed = String(trimmed[range])
+        } else if let hexRange = trimmed.range(of: "[a-fA-F0-9]{32}", options: .regularExpression) {
+            trimmed = String(trimmed[hexRange])
+        }
+        if trimmed != input {
+            cloudflareAccountId = trimmed
         }
     }
     
