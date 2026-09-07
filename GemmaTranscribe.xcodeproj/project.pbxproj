@@ -262,7 +262,7 @@ productReference = 6B624F7294634A32A1EB96A8 /* GemmaTranscribe.app */;
 			projectDirPath = "";
 			projectRoot = "";
 						packageReferences = (
-				A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */,
+				A11CE00523456789ABCDEF05 /* XCLocalSwiftPackageReference "LiteRTLM" */,
 			);
 targets = (
 				A970C100ED9C41FFA8CBBE27 /* GemmaTranscribe */,
@@ -270,21 +270,17 @@ targets = (
 		};
 /* End PBXProject section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/google-ai-edge/LiteRT-LM";
-			requirement = {
-				kind = exactVersion;
-				version = 0.16.1;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		A11CE00523456789ABCDEF05 /* XCLocalSwiftPackageReference "LiteRTLM" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "LocalPackages/LiteRTLM";
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		A11CE00623456789ABCDEF06 /* LiteRTLM */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = A11CE00523456789ABCDEF05 /* XCRemoteSwiftPackageReference "LiteRT-LM" */;
+			package = A11CE00523456789ABCDEF05 /* XCLocalSwiftPackageReference "LiteRTLM" */;
 			productName = LiteRTLM;
 		};
 /* End XCSwiftPackageProductDependency section */

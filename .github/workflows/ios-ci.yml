@@ -18,7 +18,7 @@ jobs:
 
       - name: Select Xcode Version
         run: |
-          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_16.0.app || true
+          sudo xcode-select -s /Applications/Xcode_16.0.app || sudo xcode-select -s /Applications/Xcode_15.4.app || true
           xcodebuild -version
 
       - name: Build and Archive
@@ -58,4 +58,3 @@ jobs:
         with:
           name: GemmaTranscribe-unsigned-ipa
           path: GemmaTranscribe-unsigned.ipa
-          retention-days: 14
