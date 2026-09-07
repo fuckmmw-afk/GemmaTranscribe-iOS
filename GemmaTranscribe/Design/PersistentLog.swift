@@ -12,24 +12,24 @@ public enum PersistentLog {
     private static let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "PersistentLog")
     
     public enum Event {
-        case waveformAppeared(bars: Int, animation: String)
-        case waveformDisappeared(bars: Int)
-        case waveformStall(gapSeconds: Double)
-        case waveformHeartbeat(activeBars: Int, maxGapSeconds: Double)
+        case waveformAppeared(refreshID: Int, isProcessing: Bool, energyCount: Int, killedState: Bool)
+        case waveformDisappeared(refreshID: Int, renderTick: Int)
+        case waveformStall(gapMs: Int, renderTick: Int, energyCount: Int)
+        case waveformHeartbeat(renderTick: Int, avgLevel: Float, energyCount: Int, maxGapMs: Int)
         case rapidTapRejected
     }
     
     public static func log(_ event: Event) {
         #if DEBUG
         switch event {
-        case .waveformAppeared(let bars, let animation):
-            logger.debug("Waveform appeared: \(bars) bars, animation=\(animation)")
-        case .waveformDisappeared(let bars):
-            logger.debug("Waveform disappeared: \(bars) bars")
-        case .waveformStall(let gap):
-            logger.debug("Waveform stall: gap=\(gap)s")
-        case .waveformHeartbeat(let activeBars, let maxGap):
-            logger.debug("Waveform heartbeat: \(activeBars) active bars, maxGap=\(maxGap)s")
+        case .waveformAppeared(let refreshID, let isProcessing, let energyCount, let killedState):
+            logger.debug("Waveform appeared: refreshID=\(refreshID), isProcessing=\(isProcessing), count=\(energyCount), killed=\(killedState)")
+        case .waveformDisappeared(let refreshID, let renderTick):
+            logger.debug("Waveform disappeared: refreshID=\(refreshID), renderTick=\(renderTick)")
+        case .waveformStall(let gapMs, let renderTick, let energyCount):
+            logger.debug("Waveform stall: gap=\(gapMs)ms, renderTick=\(renderTick), count=\(energyCount)")
+        case .waveformHeartbeat(let renderTick, let avgLevel, let energyCount, let maxGapMs):
+            logger.debug("Waveform heartbeat: renderTick=\(renderTick), avg=\(avgLevel), count=\(energyCount), maxGap=\(maxGapMs)ms")
         case .rapidTapRejected:
             logger.debug("Rapid tap rejected")
         }

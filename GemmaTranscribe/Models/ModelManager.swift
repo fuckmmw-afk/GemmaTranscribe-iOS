@@ -106,7 +106,7 @@ public final class ModelManager: ObservableObject {
         
         do {
             try await downloaderInstance.download(repoId: model.identifier, destination: destination) { [weak self] progress in
-                Task { @MainActor in
+                Task { @MainActor [weak self] in
                     self?.currentDownloadProgress = progress
                 }
             }

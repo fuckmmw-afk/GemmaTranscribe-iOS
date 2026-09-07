@@ -36,7 +36,7 @@ public struct HomeRecordingView: View {
                         .padding(.horizontal)
                     
                     // Live Captions / Transcription Container
-                    GlassCard(cornerRadius: 20) {
+                    GlassCard {
                         RealtimeTranscriptView(
                             lines: coordinator.transcriptLines,
                             interimText: coordinator.interimText,
@@ -235,11 +235,11 @@ public struct HomeRecordingView: View {
         case .recording:
             return .micLevels
         case .transcribing:
-            return .processingSine
+            return .sweep
         case .processing:
-            return .processingPeak
+            return .travellingPeak
         default:
-            return .micLevels
+            return .still
         }
     }
     

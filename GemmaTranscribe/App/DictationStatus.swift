@@ -10,6 +10,7 @@ import Foundation
 
 public enum DictationStatus: String, Codable, CaseIterable, Sendable {
     case idle         // Ready to record
+    case requested    // Transitioning to recording
     case recording    // Actively recording audio from microphone
     case transcribing // Running local model transcription on audio chunk
     case processing   // Post-STOP Cloudflare AI processing + Web search
@@ -17,6 +18,6 @@ public enum DictationStatus: String, Codable, CaseIterable, Sendable {
     case failed       // An error occurred
     
     public var isRecordingOrTranscribing: Bool {
-        self == .recording || self == .transcribing
+        self == .recording || self == .transcribing || self == .requested
     }
 }

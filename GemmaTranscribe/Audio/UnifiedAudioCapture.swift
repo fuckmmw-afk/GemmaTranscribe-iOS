@@ -97,14 +97,18 @@ public final class UnifiedAudioCapture: ObservableObject {
         
         // Timer for elapsed seconds
         elapsedTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            guard let self = self, let start = self.recordingStartTime else { return }
-            self.elapsedSeconds = Date().timeIntervalSince(start)
+            Task { @MainActor [weak self] in
+                guard let self = self, let start = self.recordingStartTime else { return }
+                self.elapsedSeconds = Date().timeIntervalSince(start)
+            }
         }
         
         // Timer for streaming chunks (1-3s window)
         let interval = max(1.0, min(chunkDuration, 3.0))
         chunkEmissionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            self?.emitAccumulatedChunk()
+            Task { @MainActor [weak self] in
+                self?.emitAccumulatedChunk()
+            }
         }
         
         logger.info("Audio capture started: target 16kHz Float32 mono, chunkInterval=\(interval)s")

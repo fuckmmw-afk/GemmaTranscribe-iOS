@@ -13,8 +13,8 @@ public extension Color {
     static let appRecording = Color.dictusRecording
     static let appSuccess = Color.dictusSuccess
     static let appBackground = Color.dictusBackground
-    static let appCard = Color.dictusCard
-    static let appTextPrimary = Color.dictusTextPrimary
-    static let appTextSecondary = Color.dictusTextSecondary
-    static let appTextMuted = Color.dictusTextMuted
+    static let appCard = Color.dictusSurface
+    static let appTextPrimary = Color.primary
+    static let appTextSecondary = Color.secondary
+    static let appTextMuted = Color.dictusPillIconSecondary
 }
