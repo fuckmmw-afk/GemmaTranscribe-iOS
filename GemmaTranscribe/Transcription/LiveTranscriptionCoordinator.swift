@@ -74,6 +74,15 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         elapsedSeconds = 0
         recordingStartTime = Date()
         
+        // Start streaming recognition if Apple on-device speech engine is active
+        if let appleEngine = modelManager.activeEngine as? AppleOnDeviceSpeechEngine {
+            appleEngine.startStreaming { [weak self] recognizedText in
+                Task { @MainActor in
+                    self?.handleStreamingSpeechUpdate(recognizedText)
+                }
+            }
+        }
+        
         let chunkDuration = UserDefaults.standard.double(forKey: AppConfig.audioChunkDurationKey)
         let effectiveDuration = chunkDuration > 0 ? chunkDuration : AppConfig.defaultAudioChunkDuration
         
@@ -91,6 +100,11 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         guard status.isRecordingOrTranscribing else { return }
         
         status = .transcribing
+        
+        if let appleEngine = modelManager.activeEngine as? AppleOnDeviceSpeechEngine {
+            appleEngine.stopStreaming()
+        }
+        
         let finalAudioSamples = await audioCapture.stopCapture()
         
         // Finalize remaining audio samples if any
@@ -99,58 +113,90 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         }
         
         // Calculate duration
-        let duration = Int(self.elapsedSeconds.rounded())
+        let duration = max(1, Int(self.elapsedSeconds.rounded()))
         
         // Prepare clean transcript
-        let cleanText = plainCleanTranscript
-        self.currentCleanTranscript = cleanText
-        
-        guard !cleanText.isEmpty else {
-            status = .idle
-            logger.info("Empty transcription recorded, resetting to idle")
-            return
+        var cleanText = plainCleanTranscript
+        if cleanText.isEmpty && !interimText.isEmpty {
+            cleanText = TranscriptCleaner.clean(interimText)
+        }
+        if cleanText.isEmpty && !fullRawTranscript.isEmpty {
+            cleanText = TranscriptCleaner.clean(fullRawTranscript)
         }
         
-        // Trigger Cloudflare Post-STOP AI Processing & Web Search
-        status = .processing
-        logger.info("Triggering Cloudflare brain processing for: \(cleanText.prefix(40))...")
+        let hasSpeech = !cleanText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let finalCleanText = hasSpeech ? cleanText : "Речь не была распознана (тишина или неразборчиво)"
+        self.currentCleanTranscript = finalCleanText
         
-        do {
-            let brainResult = try await CloudflareBrainService.process(cleanTranscript: cleanText)
-            self.latestBrainResponse = brainResult
-            self.status = .ready
-            self.isPostStopSheetPresented = true
-            
-            // Save to local history immediately
-            let record = TranscriptionRecord(
-                durationSeconds: duration,
-                rawTranscript: fullRawTranscript.isEmpty ? cleanText : fullRawTranscript,
-                cleanTranscript: cleanText,
-                modelUsed: modelManager.activeModelId,
-                summary: brainResult.summary,
-                cards: brainResult.cards,
-                actionPoints: brainResult.actionPoints,
-                webSearchCitation: brainResult.webSearch
+        // Trigger Cloudflare Post-STOP AI Processing & Web Search if we have speech
+        status = .processing
+        logger.info("Processing post-stop: \(finalCleanText.prefix(40))...")
+        
+        if hasSpeech {
+            do {
+                let brainResult = try await CloudflareBrainService.process(cleanTranscript: finalCleanText)
+                self.latestBrainResponse = brainResult
+                self.status = .ready
+                self.isPostStopSheetPresented = true
+                
+                // Save to local history immediately
+                let record = TranscriptionRecord(
+                    durationSeconds: duration,
+                    rawTranscript: fullRawTranscript.isEmpty ? finalCleanText : fullRawTranscript,
+                    cleanTranscript: finalCleanText,
+                    modelUsed: modelManager.activeEngine.displayName,
+                    summary: brainResult.summary,
+                    cards: brainResult.cards,
+                    actionPoints: brainResult.actionPoints,
+                    webSearchCitation: brainResult.webSearch
+                )
+                historyStore.append(record)
+                logger.info("Recording successfully processed and saved to local history")
+            } catch {
+                logger.error("Cloudflare processing error: \(error.localizedDescription)")
+                self.status = .ready
+                self.isPostStopSheetPresented = true
+                
+                // Save even if Cloudflare failed
+                let record = TranscriptionRecord(
+                    durationSeconds: duration,
+                    rawTranscript: fullRawTranscript.isEmpty ? finalCleanText : fullRawTranscript,
+                    cleanTranscript: finalCleanText,
+                    modelUsed: modelManager.activeEngine.displayName
+                )
+                historyStore.append(record)
+            }
+        } else {
+            // Empty / silent speech session
+            self.latestBrainResponse = CloudflareBrainResponse(
+                summary: "Запись завершена, однако в аудиофрагменте не обнаружено распознаваемой речи.",
+                cards: [],
+                actionPoints: ["Говорите ближе к микрофону", "Убедитесь, что громкость голоса достаточна"],
+                webSearch: nil,
+                model: modelManager.activeEngine.displayName,
+                searched: false
             )
-            historyStore.append(record)
-            logger.info("Recording successfully processed and saved to local history")
-        } catch {
-            logger.error("Cloudflare processing error: \(error.localizedDescription)")
             self.status = .ready
             self.isPostStopSheetPresented = true
             
-            // Save even if Cloudflare failed (using clean text)
             let record = TranscriptionRecord(
                 durationSeconds: duration,
-                rawTranscript: fullRawTranscript.isEmpty ? cleanText : fullRawTranscript,
-                cleanTranscript: cleanText,
-                modelUsed: modelManager.activeModelId
+                rawTranscript: "Речь не была распознана",
+                cleanTranscript: "Речь не была распознана",
+                modelUsed: modelManager.activeEngine.displayName
             )
             historyStore.append(record)
         }
     }
     
     // MARK: - Private Processing
+    
+    private func handleStreamingSpeechUpdate(_ text: String) {
+        let cleaned = TranscriptCleaner.clean(text)
+        guard !cleaned.isEmpty else { return }
+        self.interimText = cleaned
+        self.fullRawTranscript = text
+    }
     
     private func processAudioChunk(_ samples: [Float], isFinal: Bool = false) async {
         guard !samples.isEmpty else { return }

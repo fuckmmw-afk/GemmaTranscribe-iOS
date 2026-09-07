@@ -43,6 +43,7 @@
 		5D20116902094F6F876D6A3B /* TranscriptionRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */; };
 		4D9B511D4F2F44298B574217 /* HuggingFaceSearchService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */; };
 		CBA8C63E4C1747F79DCAE986 /* LiteRTGemmaEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */; };
+A11CE00123456789ABCDEF01 /* AppleOnDeviceSpeechEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = A11CE00223456789ABCDEF02 /* AppleOnDeviceSpeechEngine.swift */; };
 		7157D181DE244351BCBEC05C /* ModelInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 691248590BC74ECF98850CE1 /* ModelInfo.swift */; };
 		90998E68CA544F159DEFAA8B /* ModelManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35FB344BACD44ECA15148E9 /* ModelManager.swift */; };
 		CC7EF58B8E2840F4BA458F58 /* ModelRepoDownloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */; };
@@ -99,6 +100,7 @@
 		547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "TranscriptionRecord.swift"; path = "GemmaTranscribe/History/TranscriptionRecord.swift"; sourceTree = "<group>"; };
 		63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "HuggingFaceSearchService.swift"; path = "GemmaTranscribe/Models/HuggingFaceSearchService.swift"; sourceTree = "<group>"; };
 		C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "LiteRTGemmaEngine.swift"; path = "GemmaTranscribe/Models/LiteRTGemmaEngine.swift"; sourceTree = "<group>"; };
+A11CE00223456789ABCDEF02 /* AppleOnDeviceSpeechEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "AppleOnDeviceSpeechEngine.swift"; path = "GemmaTranscribe/Models/AppleOnDeviceSpeechEngine.swift"; sourceTree = "<group>"; };
 		691248590BC74ECF98850CE1 /* ModelInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelInfo.swift"; path = "GemmaTranscribe/Models/ModelInfo.swift"; sourceTree = "<group>"; };
 		F35FB344BACD44ECA15148E9 /* ModelManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelManager.swift"; path = "GemmaTranscribe/Models/ModelManager.swift"; sourceTree = "<group>"; };
 		C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = "ModelRepoDownloader.swift"; path = "GemmaTranscribe/Models/ModelRepoDownloader.swift"; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 				547D3F4E4A544E66BAAD5C6F /* TranscriptionRecord.swift */,
 				63A9F6964BF94FB7A43ECB3D /* HuggingFaceSearchService.swift */,
 				C162529914BF410CBA3C62F2 /* LiteRTGemmaEngine.swift */,
+A11CE00223456789ABCDEF02 /* AppleOnDeviceSpeechEngine.swift */,
 				691248590BC74ECF98850CE1 /* ModelInfo.swift */,
 				F35FB344BACD44ECA15148E9 /* ModelManager.swift */,
 				C4D426B5344F48B59F4BCA9E /* ModelRepoDownloader.swift */,
@@ -307,6 +310,7 @@
 				5D20116902094F6F876D6A3B /* TranscriptionRecord.swift in Sources */,
 				4D9B511D4F2F44298B574217 /* HuggingFaceSearchService.swift in Sources */,
 				CBA8C63E4C1747F79DCAE986 /* LiteRTGemmaEngine.swift in Sources */,
+A11CE00123456789ABCDEF01 /* AppleOnDeviceSpeechEngine.swift in Sources */,
 				7157D181DE244351BCBEC05C /* ModelInfo.swift in Sources */,
 				90998E68CA544F159DEFAA8B /* ModelManager.swift in Sources */,
 				CC7EF58B8E2840F4BA458F58 /* ModelRepoDownloader.swift in Sources */,

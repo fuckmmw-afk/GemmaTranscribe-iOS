@@ -25,15 +25,23 @@ public final class ModelManager: ObservableObject {
     private var downloader: ModelRepoDownloader?
     private var cancellables = Set<AnyCancellable>()
     
+    public let appleFallbackEngine = AppleOnDeviceSpeechEngine()
+    
     // Active speech engine
     public private(set) var activeEngine: SpeechModelEngine
     
     public init() {
         let storedModel = UserDefaults.standard.string(forKey: AppConfig.activeModelKey) ?? AppConfig.defaultModelId
         self.activeModelId = storedModel
-        self.activeEngine = LiteRTGemmaEngine(modelId: storedModel)
+        self.activeEngine = appleFallbackEngine
         
         refreshDownloadedModels()
+        
+        if isModelDownloaded(storedModel) {
+            self.activeEngine = LiteRTGemmaEngine(modelId: storedModel)
+        } else {
+            self.activeEngine = appleFallbackEngine
+        }
         
         NotificationCenter.default.publisher(for: .modelDownloadProgressUpdated)
             .receive(on: DispatchQueue.main)
@@ -66,10 +74,12 @@ public final class ModelManager: ObservableObject {
         }
         
         var downloaded = Set<String>()
-        for dir in subdirs {
-            let modelId = dir.lastPathComponent.replacingOccurrences(of: "___", with: "/")
-            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        for dir in subdirs where dir.hasDirectoryPath {
+            let sanitizedName = dir.lastPathComponent
+            let modelId = sanitizedName.replacingOccurrences(of: "___", with: "/")
             
+            // Check actual genuine model weights
+            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])) ?? []
             var totalBytes: Int64 = 0
             for file in files {
                 let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
@@ -97,8 +107,6 @@ public final class ModelManager: ObservableObject {
         activeModelId = identifier
         UserDefaults.standard.set(identifier, forKey: AppConfig.activeModelKey)
         
-        // Instantiate new engine
-        self.activeEngine = LiteRTGemmaEngine(modelId: identifier)
         await loadActiveEngine()
     }
     
@@ -158,21 +166,30 @@ public final class ModelManager: ObservableObject {
         if activeModelId == identifier {
             Task {
                 await activeEngine.unload()
+                self.activeEngine = appleFallbackEngine
             }
         }
         logger.info("Model deleted: \(identifier, privacy: .public)")
     }
     
     private func loadActiveEngine() async {
-        guard isModelDownloaded(activeModelId) else { return }
+        guard isModelDownloaded(activeModelId) else {
+            self.activeEngine = appleFallbackEngine
+            logger.info("Model weights not on device; activeEngine set to Apple On-Device Neural Speech")
+            return
+        }
+        
+        let gemmaEngine = LiteRTGemmaEngine(modelId: activeModelId)
         let sanitizedName = activeModelId.replacingOccurrences(of: "/", with: "___")
         let destination = AppConfig.modelsDirectory.appendingPathComponent(sanitizedName, isDirectory: true)
         
         do {
-            try await activeEngine.loadModel(from: destination)
+            try await gemmaEngine.loadModel(from: destination)
+            self.activeEngine = gemmaEngine
             logger.info("Active model engine loaded: \(self.activeModelId, privacy: .public)")
         } catch {
-            logger.error("Failed to load active model \(self.activeModelId, privacy: .public): \(error.localizedDescription)")
+            logger.error("Failed to load active model \(self.activeModelId, privacy: .public): \(error.localizedDescription), using Apple On-Device fallback")
+            self.activeEngine = appleFallbackEngine
         }
     }
 }

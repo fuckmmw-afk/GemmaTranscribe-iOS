@@ -9,13 +9,27 @@
 
 import SwiftUI
 
+public enum HomeActiveSheet: Identifiable {
+    case modelManager
+    case history
+    case settings
+    case postStopResult
+    
+    public var id: String {
+        switch self {
+        case .modelManager: return "modelManager"
+        case .history: return "history"
+        case .settings: return "settings"
+        case .postStopResult: return "postStopResult"
+        }
+    }
+}
+
 public struct HomeRecordingView: View {
     @ObservedObject var coordinator = LiveTranscriptionCoordinator.shared
     @ObservedObject var modelManager = ModelManager.shared
     
-    @State private var showingModelManager = false
-    @State private var showingHistory = false
-    @State private var showingSettings = false
+    @State private var activeSheet: HomeActiveSheet? = nil
     
     public var body: some View {
         NavigationStack {
@@ -53,23 +67,29 @@ public struct HomeRecordingView: View {
                 }
             }
             .navigationBarHidden(true)
-            .sheet(isPresented: $showingModelManager) {
-                ModelManagerView()
+            .sheet(item: $activeSheet) { sheet in
+                switch sheet {
+                case .modelManager:
+                    ModelManagerView()
+                case .history:
+                    HistoryView()
+                case .settings:
+                    SettingsView()
+                case .postStopResult:
+                    PostStopResultCardView(
+                        cleanTranscript: coordinator.currentCleanTranscript,
+                        response: coordinator.latestBrainResponse,
+                        onDismiss: {
+                            activeSheet = nil
+                            coordinator.isPostStopSheetPresented = false
+                        }
+                    )
+                }
             }
-            .sheet(isPresented: $showingHistory) {
-                HistoryView()
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-            }
-            .sheet(isPresented: $coordinator.isPostStopSheetPresented) {
-                PostStopResultCardView(
-                    cleanTranscript: coordinator.currentCleanTranscript,
-                    response: coordinator.latestBrainResponse,
-                    onDismiss: {
-                        coordinator.isPostStopSheetPresented = false
-                    }
-                )
+            .onChange(of: coordinator.isPostStopSheetPresented) { presented in
+                if presented {
+                    activeSheet = .postStopResult
+                }
             }
         }
     }
@@ -80,18 +100,23 @@ public struct HomeRecordingView: View {
         HStack {
             // Model Selector Pill
             Button {
-                showingModelManager = true
+                activeSheet = .modelManager
             } label: {
                 HStack(spacing: 6) {
+                    let isReady = modelManager.isModelDownloaded(modelManager.activeModelId)
                     Circle()
-                        .fill(modelManager.isModelDownloaded(modelManager.activeModelId) ? Color.green : Color.orange)
+                        .fill(isReady ? Color.green : Color.orange)
                         .frame(width: 8, height: 8)
                     
-                    let shortName = modelManager.activeModelId.components(separatedBy: "/").last?
-                        .replacingOccurrences(of: "-it-litert-lm", with: "")
-                        .replacingOccurrences(of: "gemma-3n-", with: "Gemma 3n ") ?? "Gemma 3n E2B"
+                    let title: String = {
+                        if isReady {
+                            return "Gemma 3n E2B"
+                        } else {
+                            return "Apple Neural (Ready)"
+                        }
+                    }()
                     
-                    Text(shortName)
+                    Text(title)
                         .font(.caption.weight(.semibold))
                         .foregroundColor(.primary)
                     
@@ -109,7 +134,7 @@ public struct HomeRecordingView: View {
             
             // History Button
             Button {
-                showingHistory = true
+                activeSheet = .history
             } label: {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 18, weight: .medium))
@@ -121,7 +146,7 @@ public struct HomeRecordingView: View {
             
             // Settings Button
             Button {
-                showingSettings = true
+                activeSheet = .settings
             } label: {
                 Image(systemName: "gearshape")
                     .font(.system(size: 18, weight: .medium))

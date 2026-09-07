@@ -24,6 +24,8 @@
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>GemmaTranscribe requires microphone access for on-device realtime speech transcription.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>GemmaTranscribe uses on-device speech recognition for realtime transcription.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
