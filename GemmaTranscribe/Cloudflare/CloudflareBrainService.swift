@@ -143,9 +143,13 @@ public struct CloudflareBrainService: Sendable {
         let searchQuery = extractSearchQuery(from: cleanTranscript)
         let webCitation = await performWikipediaSearch(query: searchQuery, locale: locale)
         
-        let searchContext = webCitation != nil
-            ? "Дополнительная справка из Wikipedia:\nНазвание: \(webCitation!.title)\nОписание: \(webCitation!.snippet)\nURL: \(webCitation!.url)\n\n"
-            : ""
+        var searchContext = ""
+        if let citation = webCitation {
+            let title = citation.title ?? ""
+            let snippet = citation.snippet ?? ""
+            let url = citation.url ?? ""
+            searchContext = "Дополнительная справка из Wikipedia:\nНазвание: \(title)\nОписание: \(snippet)\nURL: \(url)\n\n"
+        }
         
         let systemPrompt = """
         Ты — экспертный аналитический AI-ассистент в приложении GemmaTranscribe.

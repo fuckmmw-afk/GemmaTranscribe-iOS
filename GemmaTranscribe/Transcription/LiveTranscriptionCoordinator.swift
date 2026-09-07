@@ -41,14 +41,16 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     
     public init() {
         // Set up streaming audio chunk handler
-        audioCapture.onAudioChunkAvailable = { [weak self] chunk in
+        audioCapture.onAudioChunkAvailable = { chunk in
             Task { @MainActor in
-                await self?.processAudioChunk(chunk)
+                await LiveTranscriptionCoordinator.shared.processAudioChunk(chunk)
             }
         }
         
-        audioCapture.onElapsedSecondsUpdated = { [weak self] seconds in
-            self?.elapsedSeconds = seconds
+        audioCapture.onElapsedSecondsUpdated = { seconds in
+            Task { @MainActor in
+                LiveTranscriptionCoordinator.shared.elapsedSeconds = seconds
+            }
         }
     }
     
@@ -76,9 +78,9 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         
         // Start streaming recognition if Apple on-device speech engine is active
         if let appleEngine = modelManager.activeEngine as? AppleOnDeviceSpeechEngine {
-            appleEngine.startStreaming { [weak self] recognizedText in
+            appleEngine.startStreaming { recognizedText in
                 Task { @MainActor in
-                    self?.handleStreamingSpeechUpdate(recognizedText)
+                    LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
                 }
             }
         }
@@ -191,7 +193,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     
     // MARK: - Private Processing
     
-    private func handleStreamingSpeechUpdate(_ text: String) {
+    public func handleStreamingSpeechUpdate(_ text: String) {
         let cleaned = TranscriptCleaner.clean(text)
         guard !cleaned.isEmpty else { return }
         self.interimText = cleaned
