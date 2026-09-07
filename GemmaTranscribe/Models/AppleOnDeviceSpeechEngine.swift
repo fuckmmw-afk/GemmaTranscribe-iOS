@@ -29,10 +29,7 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
     private let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16000, channels: 1, interleaved: false)!
     private let queue = DispatchQueue(label: "com.gemmatranscribe.applespeech", qos: .userInitiated)
     
-    @MainActor private var currentTranscript: String = ""
-    
     public init() {
-        // Try Russian first, fallback to device locale or English
         let ruLocale = Locale(identifier: "ru-RU")
         if let rec = SFSpeechRecognizer(locale: ruLocale), rec.isAvailable {
             self.recognizer = rec
@@ -59,33 +56,48 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
             guard let self = self else { return }
             self.stopStreamingInternal()
             
-            guard let recognizer = self.recognizer, recognizer.isAvailable else {
-                logger.error("SFSpeechRecognizer is not available")
-                return
-            }
-            
-            let request = SFSpeechAudioBufferRecognitionRequest()
-            request.shouldReportPartialResults = true
-            
-            // Prefer on-device neural recognition without server communication
-            if recognizer.supportsOnDeviceRecognition {
-                request.requiresOnDeviceRecognition = true
-            }
-            
-            self.recognitionRequest = request
-            
-            self.recognitionTask = recognizer.recognitionTask(with: request) { result, error in
-                if let result = result {
-                    let text = result.bestTranscription.formattedString
-                    onTextUpdate(text)
+            // Check authorization
+            let authStatus = SFSpeechRecognizer.authorizationStatus()
+            if authStatus != .authorized {
+                SFSpeechRecognizer.requestAuthorization { status in
+                    if status == .authorized {
+                        self.beginRecognitionTask(onTextUpdate: onTextUpdate)
+                    } else {
+                        logger.error("SFSpeechRecognizer permission denied: \(status.rawValue)")
+                    }
                 }
-                if let error = error {
-                    logger.debug("Speech recognition task update: \(error.localizedDescription)")
-                }
+            } else {
+                self.beginRecognitionTask(onTextUpdate: onTextUpdate)
             }
-            
-            logger.info("Apple Speech recognition streaming started")
         }
+    }
+    
+    private func beginRecognitionTask(onTextUpdate: @escaping @Sendable (String) -> Void) {
+        guard let recognizer = self.recognizer, recognizer.isAvailable else {
+            logger.error("SFSpeechRecognizer is not available")
+            return
+        }
+        
+        let request = SFSpeechAudioBufferRecognitionRequest()
+        request.shouldReportPartialResults = true
+        
+        if recognizer.supportsOnDeviceRecognition {
+            request.requiresOnDeviceRecognition = true
+        }
+        
+        self.recognitionRequest = request
+        
+        self.recognitionTask = recognizer.recognitionTask(with: request) { result, error in
+            if let result = result {
+                let text = result.bestTranscription.formattedString
+                onTextUpdate(text)
+            }
+            if let error = error {
+                logger.debug("Speech recognition callback: \(error.localizedDescription)")
+            }
+        }
+        
+        logger.info("Apple Speech recognition streaming started")
     }
     
     public func appendAudioSamples(_ samples: [Float]) {

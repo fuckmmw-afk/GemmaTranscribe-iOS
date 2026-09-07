@@ -35,7 +35,10 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     private var fullRawTranscript: String = ""
     
     public var plainCleanTranscript: String {
-        let text = transcriptLines.map(\.text).joined(separator: " ") + (interimText.isEmpty ? "" : " " + interimText)
+        if !interimText.isEmpty {
+            return TranscriptCleaner.clean(interimText)
+        }
+        let text = transcriptLines.map(\.text).joined(separator: " ")
         return TranscriptCleaner.clean(text)
     }
     
@@ -76,12 +79,10 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         elapsedSeconds = 0
         recordingStartTime = Date()
         
-        // Start streaming recognition if Apple on-device speech engine is active
-        if let appleEngine = modelManager.activeEngine as? AppleOnDeviceSpeechEngine {
-            appleEngine.startStreaming { recognizedText in
-                Task { @MainActor in
-                    LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
-                }
+        // Start streaming recognition (works 100% on-device whether Gemma is loaded or downloading)
+        modelManager.appleFallbackEngine.startStreaming { recognizedText in
+            Task { @MainActor in
+                LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
             }
         }
         
@@ -102,10 +103,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         guard status.isRecordingOrTranscribing else { return }
         
         status = .transcribing
-        
-        if let appleEngine = modelManager.activeEngine as? AppleOnDeviceSpeechEngine {
-            appleEngine.stopStreaming()
-        }
+        modelManager.appleFallbackEngine.stopStreaming()
         
         let finalAudioSamples = await audioCapture.stopCapture()
         
@@ -134,6 +132,10 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         status = .processing
         logger.info("Processing post-stop: \(finalCleanText.prefix(40))...")
         
+        let engineName = modelManager.isModelDownloaded(modelManager.activeModelId)
+            ? "Google Gemma 3n E2B"
+            : modelManager.appleFallbackEngine.displayName
+        
         if hasSpeech {
             do {
                 let brainResult = try await CloudflareBrainService.process(cleanTranscript: finalCleanText)
@@ -146,7 +148,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                     durationSeconds: duration,
                     rawTranscript: fullRawTranscript.isEmpty ? finalCleanText : fullRawTranscript,
                     cleanTranscript: finalCleanText,
-                    modelUsed: modelManager.activeEngine.displayName,
+                    modelUsed: engineName,
                     summary: brainResult.summary,
                     cards: brainResult.cards,
                     actionPoints: brainResult.actionPoints,
@@ -164,7 +166,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                     durationSeconds: duration,
                     rawTranscript: fullRawTranscript.isEmpty ? finalCleanText : fullRawTranscript,
                     cleanTranscript: finalCleanText,
-                    modelUsed: modelManager.activeEngine.displayName
+                    modelUsed: engineName
                 )
                 historyStore.append(record)
             }
@@ -175,7 +177,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                 cards: [],
                 actionPoints: ["Говорите ближе к микрофону", "Убедитесь, что громкость голоса достаточна"],
                 webSearch: nil,
-                model: modelManager.activeEngine.displayName,
+                model: engineName,
                 searched: false
             )
             self.status = .ready
@@ -185,7 +187,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                 durationSeconds: duration,
                 rawTranscript: "Речь не была распознана",
                 cleanTranscript: "Речь не была распознана",
-                modelUsed: modelManager.activeEngine.displayName
+                modelUsed: engineName
             )
             historyStore.append(record)
         }
@@ -202,6 +204,9 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     
     private func processAudioChunk(_ samples: [Float], isFinal: Bool = false) async {
         guard !samples.isEmpty else { return }
+        
+        // Feed audio samples directly to Apple on-device speech recognizer
+        modelManager.appleFallbackEngine.appendAudioSamples(samples)
         
         do {
             let rawChunkText = try await modelManager.activeEngine.transcribe(audioSamples: samples)

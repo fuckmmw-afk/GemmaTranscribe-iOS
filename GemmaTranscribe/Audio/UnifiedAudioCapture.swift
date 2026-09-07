@@ -2,60 +2,48 @@
 //  UnifiedAudioCapture.swift
 //  GemmaTranscribe
 //
-//  Realtime audio capture engine using AVAudioEngine, 16kHz mono Float32 conversion,
-//  and streaming chunk emission. Adapted from Dictus UnifiedAudioEngine.
+//  Unified 16kHz mono audio capture engine with real-time waveform RMS calculation.
+//  Adapted from LiveTranscriber UnifiedAudioPipeline.
 //
 
-import Foundation
 import AVFoundation
-import Combine
+import Foundation
 import OSLog
 
 private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "UnifiedAudioCapture")
 
 @MainActor
 public final class UnifiedAudioCapture: ObservableObject {
+    public var onAudioChunkAvailable: (([Float]) -> Void)?
+    public var onElapsedSecondsUpdated: ((Double) -> Void)?
+    
     @Published public private(set) var isRecording = false
     @Published public private(set) var elapsedSeconds: Double = 0
-    
-    public let waveformStore = RecordingWaveformStore(barCount: 30)
+    public let waveformStore = RecordingWaveformStore()
     
     private var engine = AVAudioEngine()
     private var converter: AVAudioConverter?
     private let targetFormat: AVAudioFormat
-    
     private var accumulatedSamples: [Float] = []
-    private var recordingStartTime: Date?
     private var loopTask: Task<Void, Never>?
-    
-    // Callbacks
-    public var onAudioChunkAvailable: (([Float]) -> Void)?
-    public var onElapsedSecondsUpdated: ((Double) -> Void)?
+    private var recordingStartTime: Date?
     
     public init() {
-        guard let format = AVAudioFormat(
+        // Gemma 3n E2B expects 16,000Hz mono Float32 audio
+        self.targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: AppConfig.targetSampleRate,
-            channels: AppConfig.targetChannels,
+            channels: 1,
             interleaved: false
-        ) else {
-            fatalError("Failed to initialize target 16kHz mono Float32 AVAudioFormat")
-        }
-        self.targetFormat = format
+        )!
     }
     
-    public func startCapture(chunkDuration: Double = AppConfig.defaultAudioChunkDuration) async throws {
+    public func startCapture(chunkDuration: TimeInterval = AppConfig.defaultAudioChunkDuration) async throws {
         guard !isRecording else { return }
         
-        // Request microphone permission if needed
-        let permissionGranted: Bool
-        if #available(iOS 17.0, *) {
-            permissionGranted = await AVAudioApplication.requestRecordPermission()
-        } else {
-            permissionGranted = await withCheckedContinuation { continuation in
-                AVAudioSession.sharedInstance().requestRecordPermission { allowed in
-                    continuation.resume(returning: allowed)
-                }
+        let permissionGranted = await withCheckedContinuation { continuation in
+            AVAudioApplication.requestRecordPermission { granted in
+                continuation.resume(returning: granted)
             }
         }
         guard permissionGranted else {
@@ -189,6 +177,7 @@ public final class UnifiedAudioCapture: ObservableObject {
     private func emitAccumulatedChunk() {
         guard !accumulatedSamples.isEmpty else { return }
         let chunk = accumulatedSamples
+        accumulatedSamples.removeAll(keepingCapacity: true)
         onAudioChunkAvailable?(chunk)
     }
     
