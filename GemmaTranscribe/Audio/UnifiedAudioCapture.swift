@@ -15,6 +15,7 @@ private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "Uni
 @MainActor
 public final class UnifiedAudioCapture: ObservableObject {
     public var onAudioChunkAvailable: (([Float]) -> Void)?
+    public var onRawBufferAvailable: ((AVAudioPCMBuffer) -> Void)?
     public var onElapsedSecondsUpdated: ((Double) -> Void)?
     
     @Published public private(set) var isRecording = false
@@ -25,6 +26,7 @@ public final class UnifiedAudioCapture: ObservableObject {
     private var converter: AVAudioConverter?
     private let targetFormat: AVAudioFormat
     private var accumulatedSamples: [Float] = []
+    private var totalSessionSamples: [Float] = []
     private var loopTask: Task<Void, Never>?
     private var recordingStartTime: Date?
     
@@ -55,6 +57,7 @@ public final class UnifiedAudioCapture: ObservableObject {
         
         // Reset state
         accumulatedSamples.removeAll(keepingCapacity: true)
+        totalSessionSamples.removeAll(keepingCapacity: true)
         elapsedSeconds = 0
         onElapsedSecondsUpdated?(0)
         waveformStore.reset()
@@ -78,6 +81,7 @@ public final class UnifiedAudioCapture: ObservableObject {
         let bufferSize: AVAudioFrameCount = 2048
         inputNode.installTap(onBus: 0, bufferSize: bufferSize, format: inputFormat) { [weak self] buffer, _ in
             self?.processIncomingBuffer(buffer)
+            self?.onRawBufferAvailable?(buffer)
         }
         
         engine.prepare()
@@ -123,12 +127,13 @@ public final class UnifiedAudioCapture: ObservableObject {
         engine.inputNode.removeTap(onBus: 0)
         await AudioSessionCoordinator.shared.deactivateRecording()
         
-        let finalSamples = accumulatedSamples
+        let allSamples = totalSessionSamples
         accumulatedSamples.removeAll()
+        totalSessionSamples.removeAll()
         waveformStore.reset()
         
-        logger.info("Audio capture stopped: captured \(finalSamples.count) samples")
-        return finalSamples
+        logger.info("Audio capture stopped: captured \(allSamples.count) samples")
+        return allSamples
     }
     
     private func processIncomingBuffer(_ buffer: AVAudioPCMBuffer) {
@@ -171,6 +176,7 @@ public final class UnifiedAudioCapture: ObservableObject {
         
         Task { @MainActor in
             self.accumulatedSamples.append(contentsOf: samples)
+            self.totalSessionSamples.append(contentsOf: samples)
         }
     }
     

@@ -2,9 +2,8 @@
 //  AppleOnDeviceSpeechEngine.swift
 //  GemmaTranscribe
 //
-//  On-device Apple Neural speech recognition engine using Speech framework.
-//  Provides 100% on-device, offline, zero-network speech-to-text fallback
-//  while Gemma 3n weights are downloading or on devices where LiteRT is optimizing.
+//  Apple Neural speech recognition engine using Speech framework.
+//  Transcribes spoken audio in realtime with native hardware buffer streaming.
 //
 
 import Foundation
@@ -16,7 +15,7 @@ private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "App
 
 public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Sendable {
     public let modelId: String = "apple/on-device-neural"
-    public let displayName: String = "Apple On-Device Neural Speech"
+    public let displayName: String = "Apple Neural Speech"
     
     public var isLoaded: Bool {
         return true
@@ -40,11 +39,11 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
         }
         
         self.recognizer?.defaultTaskHint = .dictation
-        logger.info("AppleOnDeviceSpeechEngine initialized with locale: \(self.recognizer?.locale.identifier ?? "unknown", privacy: .public)")
+        logger.info("AppleSpeechEngine initialized with locale: \(self.recognizer?.locale.identifier ?? "unknown", privacy: .public)")
     }
     
     public func loadModel(from localDirectory: URL) async throws {
-        // Built-in system model, always ready
+        // Built-in system model
     }
     
     public func unload() async {
@@ -56,14 +55,13 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
             guard let self = self else { return }
             self.stopStreamingInternal()
             
-            // Check authorization
             let authStatus = SFSpeechRecognizer.authorizationStatus()
             if authStatus != .authorized {
                 SFSpeechRecognizer.requestAuthorization { status in
                     if status == .authorized {
                         self.beginRecognitionTask(onTextUpdate: onTextUpdate)
                     } else {
-                        logger.error("SFSpeechRecognizer permission denied: \(status.rawValue)")
+                        logger.error("SFSpeechRecognizer authorization not granted: \(status.rawValue)")
                     }
                 }
             } else {
@@ -74,17 +72,14 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
     
     private func beginRecognitionTask(onTextUpdate: @escaping @Sendable (String) -> Void) {
         guard let recognizer = self.recognizer, recognizer.isAvailable else {
-            logger.error("SFSpeechRecognizer is not available")
+            logger.error("SFSpeechRecognizer is unavailable")
             return
         }
         
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
-        
-        if recognizer.supportsOnDeviceRecognition {
-            request.requiresOnDeviceRecognition = true
-        }
-        
+        // Do NOT force requiresOnDeviceRecognition = true: on iOS, if offline Russian
+        // pack is not installed in Settings, forcing it immediately terminates the task (code 1110)
         self.recognitionRequest = request
         
         self.recognitionTask = recognizer.recognitionTask(with: request) { result, error in
@@ -93,11 +88,23 @@ public final class AppleOnDeviceSpeechEngine: SpeechModelEngine, @unchecked Send
                 onTextUpdate(text)
             }
             if let error = error {
+                let nsError = error as NSError
+                // Ignore code 216 (cancellation on user stop)
+                if nsError.domain == "kAFAssistantErrorDomain" && nsError.code == 216 {
+                    return
+                }
                 logger.debug("Speech recognition callback: \(error.localizedDescription)")
             }
         }
         
         logger.info("Apple Speech recognition streaming started")
+    }
+    
+    public func appendRawBuffer(_ buffer: AVAudioPCMBuffer) {
+        queue.async { [weak self] in
+            guard let self = self, let request = self.recognitionRequest else { return }
+            request.append(buffer)
+        }
     }
     
     public func appendAudioSamples(_ samples: [Float]) {

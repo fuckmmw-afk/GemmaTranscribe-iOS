@@ -43,7 +43,12 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     }
     
     public init() {
-        // Set up streaming audio chunk handler
+        // Stream raw hardware audio buffers directly to Apple speech recognizer
+        audioCapture.onRawBufferAvailable = { [weak self] buffer in
+            self?.modelManager.appleFallbackEngine.appendRawBuffer(buffer)
+        }
+        
+        // Handle chunk intervals for models and duration
         audioCapture.onAudioChunkAvailable = { chunk in
             Task { @MainActor in
                 await LiveTranscriptionCoordinator.shared.processAudioChunk(chunk)
@@ -79,7 +84,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         elapsedSeconds = 0
         recordingStartTime = Date()
         
-        // Start streaming recognition (works 100% on-device whether Gemma is loaded or downloading)
+        // Start streaming recognition directly on the audio engine
         modelManager.appleFallbackEngine.startStreaming { recognizedText in
             Task { @MainActor in
                 LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
@@ -107,11 +112,6 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         
         let finalAudioSamples = await audioCapture.stopCapture()
         
-        // Finalize remaining audio samples if any
-        if !finalAudioSamples.isEmpty {
-            await processAudioChunk(finalAudioSamples, isFinal: true)
-        }
-        
         // Calculate duration
         let duration = max(1, Int(self.elapsedSeconds.rounded()))
         
@@ -122,6 +122,19 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         }
         if cleanText.isEmpty && !fullRawTranscript.isEmpty {
             cleanText = TranscriptCleaner.clean(fullRawTranscript)
+        }
+        
+        // Fallback: If on-device speech engine didn't catch speech (e.g. offline Russian asset not installed on device),
+        // use Cloudflare Workers AI Whisper with encoded 16kHz WAV audio samples
+        if cleanText.isEmpty && !finalAudioSamples.isEmpty {
+            logger.info("Local speech recognizer produced empty text, falling back to Cloudflare Whisper...")
+            let wavData = WAVEncoder.encode(samples: finalAudioSamples)
+            if let cloudText = try? await CloudflareBrainService.transcribeAudio(wavData: wavData), !cloudText.isEmpty {
+                cleanText = TranscriptCleaner.clean(cloudText)
+                self.fullRawTranscript = cloudText
+                self.interimText = cleanText
+                logger.info("Cloudflare Whisper successfully transcribed speech: \(cleanText.prefix(40))...")
+            }
         }
         
         let hasSpeech = !cleanText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -175,7 +188,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
             self.latestBrainResponse = CloudflareBrainResponse(
                 summary: "Запись завершена, однако в аудиофрагменте не обнаружено распознаваемой речи.",
                 cards: [],
-                actionPoints: ["Говорите ближе к микрофону", "Убедитесь, что громкость голоса достаточна"],
+                actionPoints: ["Говорите ближе к микрофону", "Убедитесь, что микрофону предоставлен доступ в Настройках iOS"],
                 webSearch: nil,
                 model: engineName,
                 searched: false
@@ -205,16 +218,11 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     private func processAudioChunk(_ samples: [Float], isFinal: Bool = false) async {
         guard !samples.isEmpty else { return }
         
-        // Feed audio samples directly to Apple on-device speech recognizer
-        modelManager.appleFallbackEngine.appendAudioSamples(samples)
-        
         do {
             let rawChunkText = try await modelManager.activeEngine.transcribe(audioSamples: samples)
             guard !rawChunkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             
             fullRawTranscript += (fullRawTranscript.isEmpty ? "" : " ") + rawChunkText
-            
-            // Clean chunk with TranscriptCleaner
             let cleanedChunk = TranscriptCleaner.clean(rawChunkText)
             guard !cleanedChunk.isEmpty else { return }
             
@@ -223,7 +231,6 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                 transcriptLines.append(finalLine)
                 interimText = ""
             } else {
-                // Update streaming interim text
                 self.interimText = cleanedChunk
             }
         } catch {

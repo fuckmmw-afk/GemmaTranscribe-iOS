@@ -99,6 +99,42 @@ public struct CloudflareBrainService: Sendable {
         request.setValue("Bearer \(cleanKey)", forHTTPHeaderField: "Authorization")
     }
     
+    /// Cloudflare Workers AI speech transcription via @cf/openai/whisper
+    public static func transcribeAudio(wavData: Data) async throws -> String {
+        guard let resolved = resolveEndpoint(), let accountId = resolved.accountId, !accountId.isEmpty else {
+            throw NSError(domain: "GemmaTranscribe.CloudflareWhisper", code: 400, userInfo: [NSLocalizedDescriptionKey: "Cloudflare Account ID не указан в настройках"])
+        }
+        
+        let whisperUrl = URL(string: "https://api.cloudflare.com/client/v4/accounts/\(accountId)/ai/run/@cf/openai/whisper")!
+        var request = URLRequest(url: whisperUrl)
+        request.httpMethod = "POST"
+        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
+        applyAuthHeaders(to: &request)
+        request.httpBody = wavData
+        
+        logger.info("Sending audio to Cloudflare Whisper: \(wavData.count) bytes")
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
+            let errorText = String(data: data, encoding: .utf8) ?? "HTTP \((response as? HTTPURLResponse)?.statusCode ?? 500)"
+            logger.error("Cloudflare Whisper error: \(errorText)")
+            throw NSError(domain: "GemmaTranscribe.CloudflareWhisper", code: (response as? HTTPURLResponse)?.statusCode ?? 500, userInfo: [NSLocalizedDescriptionKey: errorText])
+        }
+        
+        struct WhisperApiResponse: Codable {
+            let result: WhisperResult?
+            struct WhisperResult: Codable {
+                let text: String?
+            }
+        }
+        
+        let decoded = try JSONDecoder().decode(WhisperApiResponse.self, from: data)
+        let transcribed = decoded.result?.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        logger.info("Cloudflare Whisper recognized text: \(transcribed.prefix(50))...")
+        return transcribed
+    }
+
     public static func process(cleanTranscript: String, locale: String = "ru") async throws -> CloudflareBrainResponse {
         guard !cleanTranscript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return CloudflareBrainResponse(
