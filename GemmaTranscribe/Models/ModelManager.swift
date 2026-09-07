@@ -68,10 +68,21 @@ public final class ModelManager: ObservableObject {
         var downloaded = Set<String>()
         for dir in subdirs {
             let modelId = dir.lastPathComponent.replacingOccurrences(of: "___", with: "/")
-            // Check if dir has any files
-            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil)) ?? []
-            if !files.isEmpty {
+            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+            
+            var totalBytes: Int64 = 0
+            for file in files {
+                let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                totalBytes += Int64(size)
+            }
+            
+            // Valid model file must be at least 50MB (Gemma is ~1.8-3.6 GB)
+            if totalBytes >= 50_000_000 {
                 downloaded.insert(modelId)
+            } else if totalBytes > 0 && totalBytes < 5_000_000 {
+                // Purge corrupted/HTTP error files (e.g. 140 bytes 401 error response)
+                logger.warning("Purging corrupted/error download for \(modelId, privacy: .public) (\(totalBytes) bytes)")
+                try? FileManager.default.removeItem(at: dir)
             }
         }
         self.downloadedModelIds = downloaded
@@ -120,7 +131,7 @@ public final class ModelManager: ObservableObject {
             if activeModelId == model.identifier || !isModelDownloaded(activeModelId) {
                 await selectActiveModel(model.identifier)
             }
-            logger.info("Model download finished: \(model.identifier, privacy: .public)")
+            logger.info("Model download finished successfully: \(model.identifier, privacy: .public)")
         } catch {
             logger.error("Download failed for \(model.identifier, privacy: .public): \(error.localizedDescription)")
             errorMessage = error.localizedDescription

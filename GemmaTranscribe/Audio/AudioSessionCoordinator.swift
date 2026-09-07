@@ -21,9 +21,10 @@ public actor AudioSessionCoordinator {
     
     public func activateRecording() throws {
         let session = AVAudioSession.sharedInstance()
+        // Note: mode .default is used because mode .measurement is incompatible with .defaultToSpeaker
         try session.setCategory(
             .playAndRecord,
-            mode: .measurement,
+            mode: .default,
             options: [.duckOthers, .allowBluetooth, .defaultToSpeaker]
         )
         try session.setPreferredSampleRate(AppConfig.targetSampleRate)

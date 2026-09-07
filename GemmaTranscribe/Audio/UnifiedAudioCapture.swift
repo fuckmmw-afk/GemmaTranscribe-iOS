@@ -25,12 +25,12 @@ public final class UnifiedAudioCapture: ObservableObject {
     private let targetFormat: AVAudioFormat
     
     private var accumulatedSamples: [Float] = []
-    private var chunkEmissionTimer: Timer?
-    private var elapsedTimer: Timer?
     private var recordingStartTime: Date?
+    private var loopTask: Task<Void, Never>?
     
-    // Callback when an audio chunk is ready for transcription
+    // Callbacks
     public var onAudioChunkAvailable: (([Float]) -> Void)?
+    public var onElapsedSecondsUpdated: ((Double) -> Void)?
     
     public init() {
         guard let format = AVAudioFormat(
@@ -59,18 +59,19 @@ public final class UnifiedAudioCapture: ObservableObject {
             }
         }
         guard permissionGranted else {
-            logger.error("Microphone permission denied")
-            throw NSError(domain: "GemmaTranscribe.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "Microphone permission denied"])
+            logger.error("Microphone permission denied by user")
+            throw NSError(domain: "GemmaTranscribe.Audio", code: 1, userInfo: [NSLocalizedDescriptionKey: "Доступ к микрофону запрещен в настройках"])
         }
         
         try await AudioSessionCoordinator.shared.activateRecording()
         
-        // Reset buffers
+        // Reset state
         accumulatedSamples.removeAll(keepingCapacity: true)
         elapsedSeconds = 0
+        onElapsedSecondsUpdated?(0)
         waveformStore.reset()
         
-        // Rebuild engine if needed
+        // Rebuild engine safely
         if engine.isRunning {
             engine.stop()
             engine.inputNode.removeTap(onBus: 0)
@@ -80,8 +81,8 @@ public final class UnifiedAudioCapture: ObservableObject {
         let inputNode = engine.inputNode
         let inputFormat = inputNode.inputFormat(forBus: 0)
         guard inputFormat.sampleRate > 0, inputFormat.channelCount > 0 else {
-            logger.error("Input node reports unusable hardware format")
-            throw NSError(domain: "GemmaTranscribe.Audio", code: 2, userInfo: [NSLocalizedDescriptionKey: "Hardware audio input not available"])
+            logger.error("Input node reports unusable hardware format: \(inputFormat, privacy: .public)")
+            throw NSError(domain: "GemmaTranscribe.Audio", code: 2, userInfo: [NSLocalizedDescriptionKey: "Аудиовход микрофона недоступен"])
         }
         
         converter = AVAudioConverter(from: inputFormat, to: targetFormat)
@@ -91,37 +92,44 @@ public final class UnifiedAudioCapture: ObservableObject {
             self?.processIncomingBuffer(buffer)
         }
         
+        engine.prepare()
         try engine.start()
+        
         isRecording = true
-        recordingStartTime = Date()
+        let start = Date()
+        recordingStartTime = start
         
-        // Timer for elapsed seconds
-        elapsedTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                guard let self = self, let start = self.recordingStartTime else { return }
-                self.elapsedSeconds = Date().timeIntervalSince(start)
-            }
-        }
-        
-        // Timer for streaming chunks (1-3s window)
         let interval = max(1.0, min(chunkDuration, 3.0))
-        chunkEmissionTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.emitAccumulatedChunk()
+        
+        // Concurrency-safe timer and chunk loop independent of RunLoop modes
+        loopTask?.cancel()
+        loopTask = Task { [weak self, start, interval] in
+            var lastChunkEmission = start
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+                guard let self = self, self.isRecording else { break }
+                
+                let now = Date()
+                let elapsed = now.timeIntervalSince(start)
+                self.elapsedSeconds = elapsed
+                self.onElapsedSecondsUpdated?(elapsed)
+                
+                if now.timeIntervalSince(lastChunkEmission) >= interval {
+                    self.emitAccumulatedChunk()
+                    lastChunkEmission = now
+                }
             }
         }
         
-        logger.info("Audio capture started: target 16kHz Float32 mono, chunkInterval=\(interval)s")
+        logger.info("Audio capture started successfully: 16kHz Float32 mono, chunkInterval=\(interval)s")
     }
     
     public func stopCapture() async -> [Float] {
         guard isRecording else { return [] }
         
         isRecording = false
-        elapsedTimer?.invalidate()
-        elapsedTimer = nil
-        chunkEmissionTimer?.invalidate()
-        chunkEmissionTimer = nil
+        loopTask?.cancel()
+        loopTask = nil
         
         engine.stop()
         engine.inputNode.removeTap(onBus: 0)
@@ -131,7 +139,7 @@ public final class UnifiedAudioCapture: ObservableObject {
         accumulatedSamples.removeAll()
         waveformStore.reset()
         
-        logger.info("Audio capture stopped: captured \(finalSamples.count) samples (~ \(String(format: "%.2f", Double(finalSamples.count) / AppConfig.targetSampleRate))s)")
+        logger.info("Audio capture stopped: captured \(finalSamples.count) samples")
         return finalSamples
     }
     
@@ -181,7 +189,6 @@ public final class UnifiedAudioCapture: ObservableObject {
     private func emitAccumulatedChunk() {
         guard !accumulatedSamples.isEmpty else { return }
         let chunk = accumulatedSamples
-        // Emit chunk for realtime speech transcription
         onAudioChunkAvailable?(chunk)
     }
     
@@ -196,7 +203,6 @@ public final class UnifiedAudioCapture: ObservableObject {
             sum += sample * sample
         }
         let rms = sqrt(sum / Float(length))
-        // Map 0.0...1.0 with non-linear boost for speech
         return min(max(rms * 5.0, 0.05), 1.0)
     }
 }

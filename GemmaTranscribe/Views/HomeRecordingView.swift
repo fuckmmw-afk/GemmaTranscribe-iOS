@@ -144,7 +144,7 @@ public struct HomeRecordingView: View {
                         Circle()
                             .fill(Color.dictusRecording)
                             .frame(width: 8, height: 8)
-                        Text(formatDuration(coordinator.audioCapture.elapsedSeconds))
+                        Text(formatDuration(coordinator.elapsedSeconds))
                             .font(.system(.body, design: .monospaced).weight(.semibold))
                             .foregroundColor(.dictusRecording)
                     }

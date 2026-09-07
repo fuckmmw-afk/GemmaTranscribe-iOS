@@ -82,7 +82,7 @@ public struct AnimatedMicButton: View {
     /// Whether the button is tappable in the current status.
     /// Only idle, ready, and failed allow new dictation starts.
     private var isTappable: Bool {
-        status == .idle || status == .ready || status == .failed
+        status == .idle || status == .ready || status == .failed || status == .recording
     }
 
     public var body: some View {
@@ -117,8 +117,8 @@ public struct AnimatedMicButton: View {
                 }
 
                 // Mic icon
-                Image(systemName: "mic.fill")
-                    .font(.system(size: isPill ? 14 : 16, weight: .medium))
+                Image(systemName: status == .recording ? "stop.fill" : "mic.fill")
+                    .font(.system(size: isPill ? 14 : (status == .recording ? 22 : 18), weight: .semibold))
                     .foregroundColor(.white)
                     .scaleEffect(status == .recording ? pulseScale * 0.9 + 0.1 : 1.0)
 

@@ -9,11 +9,14 @@ import Foundation
 
 public enum AppConfig {
     public static let appName = "GemmaTranscribe"
-    public static let appVersion = "1.0.0"
+    public static let appVersion = "1.0.1"
     
     // UserDefaults Keys
     public static let activeModelKey = "active_model_id"
+    public static let huggingFaceTokenKey = "huggingface_api_token"
     public static let cloudflareWorkerUrlKey = "cloudflare_worker_url"
+    public static let cloudflareApiKeyKey = "cloudflare_api_key"
+    public static let cloudflareAccountIdKey = "cloudflare_account_id"
     public static let audioChunkDurationKey = "audio_chunk_duration_seconds"
     public static let cleanFillersEnabledKey = "clean_fillers_enabled"
     public static let autoSearchEnabledKey = "auto_search_enabled"

@@ -14,9 +14,25 @@ export default {
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
       });
+    }
+
+    // Optional API Key authentication if env.API_KEY or env.AUTH_TOKEN is configured
+    const requiredApiKey = env.API_KEY || env.AUTH_TOKEN;
+    if (requiredApiKey) {
+      const authHeader = request.headers.get("Authorization") || "";
+      const expectedHeader = `Bearer ${requiredApiKey}`;
+      if (authHeader !== expectedHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized. Invalid or missing API key." }), {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        });
+      }
     }
 
     if (request.method !== "POST") {
@@ -91,7 +107,6 @@ function extractSearchQuery(text) {
     .split(/\s+/)
     .filter(w => w.length > 3);
 
-  // Take top 1-3 prominent words
   return words.slice(0, 3).join(" ") || "Обзор";
 }
 
@@ -109,7 +124,6 @@ async function performWebSearch(query, locale = "ru") {
 
     if (!res.ok) return null;
     const data = await res.json();
-    // Format: [query, [titles], [descriptions], [urls]]
     if (data && data[1] && data[1].length > 0) {
       return {
         title: data[1][0],
@@ -163,7 +177,6 @@ async function runWorkersAI(aiBinding, transcript, searchResult, locale) {
     });
 
     const content = response.response || "";
-    // Parse JSON
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);

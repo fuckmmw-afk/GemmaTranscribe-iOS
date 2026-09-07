@@ -30,6 +30,28 @@ public struct ModelManagerView: View {
                 }
                 .pickerStyle(.segmented)
                 .padding()
+
+                // Error banner if any
+                if let err = modelManager.errorMessage {
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.red)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Ошибка загрузки")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.red)
+                            Text(err)
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.12))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
+                    .padding(.bottom, 8)
+                }
                 
                 // Content Views
                 Group {

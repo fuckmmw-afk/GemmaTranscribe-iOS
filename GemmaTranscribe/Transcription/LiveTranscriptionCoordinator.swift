@@ -25,6 +25,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     @Published public var latestBrainResponse: CloudflareBrainResponse?
     @Published public var errorText: String?
     @Published public var isPostStopSheetPresented: Bool = false
+    @Published public var elapsedSeconds: Double = 0
     
     public let audioCapture = UnifiedAudioCapture()
     private let modelManager = ModelManager.shared
@@ -44,6 +45,10 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
             Task { @MainActor in
                 await self?.processAudioChunk(chunk)
             }
+        }
+        
+        audioCapture.onElapsedSecondsUpdated = { [weak self] seconds in
+            self?.elapsedSeconds = seconds
         }
     }
     
@@ -66,6 +71,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         fullRawTranscript = ""
         latestBrainResponse = nil
         status = .recording
+        elapsedSeconds = 0
         recordingStartTime = Date()
         
         let chunkDuration = UserDefaults.standard.double(forKey: AppConfig.audioChunkDurationKey)
@@ -93,7 +99,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         }
         
         // Calculate duration
-        let duration = Int(audioCapture.elapsedSeconds.rounded())
+        let duration = Int(self.elapsedSeconds.rounded())
         
         // Prepare clean transcript
         let cleanText = plainCleanTranscript
