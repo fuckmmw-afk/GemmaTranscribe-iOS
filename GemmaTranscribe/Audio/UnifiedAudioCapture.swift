@@ -2,18 +2,91 @@
 //  UnifiedAudioCapture.swift
 //  GemmaTranscribe
 //
-//  Unified 16kHz mono audio capture engine with real-time waveform RMS calculation.
-//  Adapted from LiveTranscriber UnifiedAudioPipeline.
+//  Modular AudioPipeline:
+//  1. AudioCaptureLayer: Microphone hardware access, session activation, permissions.
+//  2. AudioPreprocessingLayer: Resampling to standard 16 kHz Float32 mono PCM and RMS power calculation.
+//  3. Streaming chunks for on-device ASR.
 //
 
 import AVFoundation
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "UnifiedAudioCapture")
+private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "AudioPipeline")
 
+/// Protocol for hardware audio capture
+public protocol AudioCaptureProtocol: AnyObject {
+    var isRecording: Bool { get }
+    func startCapture(chunkDuration: TimeInterval) async throws
+    func stopCapture() async -> [Float]
+}
+
+/// Protocol for audio conversion and preprocessing (16kHz mono Float32)
+public protocol AudioPreprocessingProtocol: Sendable {
+    func convert(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat, converter: AVAudioConverter) -> [Float]?
+    func calculateRMS(buffer: AVAudioPCMBuffer) -> Float
+}
+
+/// Real-time preprocessor implementation
+public struct StandardAudioPreprocessor: AudioPreprocessingProtocol {
+    public init() {}
+    
+    public func calculateRMS(buffer: AVAudioPCMBuffer) -> Float {
+        guard let channelData = buffer.floatChannelData else { return 0.0 }
+        let channelCount = Int(buffer.format.channelCount)
+        let frameLength = Int(buffer.frameLength)
+        guard frameLength > 0 else { return 0.0 }
+        
+        var sumSquares: Float = 0.0
+        for channel in 0..<channelCount {
+            let data = channelData[channel]
+            for frame in 0..<frameLength {
+                let sample = data[frame]
+                sumSquares += sample * sample
+            }
+        }
+        
+        let meanSquare = sumSquares / Float(frameLength * channelCount)
+        let rms = sqrt(meanSquare)
+        let minDb: Float = -60.0
+        let db = 20.0 * log10(max(rms, 0.00001))
+        let normalized = max(0.0, min(1.0, (db - minDb) / (0.0 - minDb)))
+        return normalized
+    }
+    
+    public func convert(buffer: AVAudioPCMBuffer, targetFormat: AVAudioFormat, converter: AVAudioConverter) -> [Float]? {
+        let ratio = targetFormat.sampleRate / buffer.format.sampleRate
+        let outputFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 128
+        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCapacity) else {
+            return nil
+        }
+        
+        var error: NSError?
+        var hasProvidedInput = false
+        converter.convert(to: outputBuffer, error: &error) { _, outStatus in
+            if !hasProvidedInput {
+                hasProvidedInput = true
+                outStatus.pointee = .haveData
+                return buffer
+            } else {
+                outStatus.pointee = .noDataNow
+                return nil
+            }
+        }
+        
+        guard error == nil, let channelData = outputBuffer.floatChannelData, outputBuffer.frameLength > 0 else {
+            return nil
+        }
+        
+        let frameCount = Int(outputBuffer.frameLength)
+        let ptr = channelData[0]
+        return Array(UnsafeBufferPointer(start: ptr, count: frameCount))
+    }
+}
+
+/// Unified Audio Pipeline coordinating capture and preprocessing
 @MainActor
-public final class UnifiedAudioCapture: ObservableObject {
+public final class UnifiedAudioCapture: ObservableObject, AudioCaptureProtocol {
     public var onAudioChunkAvailable: (([Float]) -> Void)?
     public var onRawBufferAvailable: ((AVAudioPCMBuffer) -> Void)?
     public var onElapsedSecondsUpdated: ((Double) -> Void)?
@@ -25,13 +98,14 @@ public final class UnifiedAudioCapture: ObservableObject {
     private var engine = AVAudioEngine()
     private var converter: AVAudioConverter?
     private let targetFormat: AVAudioFormat
+    private let preprocessor = StandardAudioPreprocessor()
     private var accumulatedSamples: [Float] = []
     private var totalSessionSamples: [Float] = []
     private var loopTask: Task<Void, Never>?
     private var recordingStartTime: Date?
     
     public init() {
-        // Gemma 3n E2B expects 16,000Hz mono Float32 audio
+        // Gemma 3n E2B / LiteRT expects 16,000Hz mono Float32 audio
         self.targetFormat = AVAudioFormat(
             commonFormat: .pcmFormatFloat32,
             sampleRate: AppConfig.targetSampleRate,
@@ -140,43 +214,15 @@ public final class UnifiedAudioCapture: ObservableObject {
         guard let converter = converter else { return }
         
         // Calculate RMS power for waveform
-        let rms = calculateRMS(buffer: buffer)
+        let rms = preprocessor.calculateRMS(buffer: buffer)
         Task { @MainActor in
             self.waveformStore.update(power: rms)
         }
         
         // Convert to 16kHz mono Float32
-        let ratio = targetFormat.sampleRate / buffer.format.sampleRate
-        let outputFrameCapacity = AVAudioFrameCount(Double(buffer.frameLength) * ratio) + 128
-        guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: outputFrameCapacity) else {
-            return
-        }
-        
-        var error: NSError?
-        var hasProvidedInput = false
-        converter.convert(to: outputBuffer, error: &error) { _, outStatus in
-            if !hasProvidedInput {
-                hasProvidedInput = true
-                outStatus.pointee = .haveData
-                return buffer
-            } else {
-                outStatus.pointee = .noDataNow
-                return nil
-            }
-        }
-        
-        if let error = error {
-            logger.error("Audio conversion failed: \(error.localizedDescription)")
-            return
-        }
-        
-        guard let floatData = outputBuffer.floatChannelData?[0] else { return }
-        let frameCount = Int(outputBuffer.frameLength)
-        let samples = Array(UnsafeBufferPointer(start: floatData, count: frameCount))
-        
-        Task { @MainActor in
-            self.accumulatedSamples.append(contentsOf: samples)
-            self.totalSessionSamples.append(contentsOf: samples)
+        if let samples = preprocessor.convert(buffer: buffer, targetFormat: targetFormat, converter: converter) {
+            accumulatedSamples.append(contentsOf: samples)
+            totalSessionSamples.append(contentsOf: samples)
         }
     }
     
@@ -186,18 +232,7 @@ public final class UnifiedAudioCapture: ObservableObject {
         accumulatedSamples.removeAll(keepingCapacity: true)
         onAudioChunkAvailable?(chunk)
     }
-    
-    private func calculateRMS(buffer: AVAudioPCMBuffer) -> Float {
-        guard let floatData = buffer.floatChannelData?[0] else { return 0.05 }
-        let length = Int(buffer.frameLength)
-        guard length > 0 else { return 0.05 }
-        
-        var sum: Float = 0
-        for i in 0..<length {
-            let sample = floatData[i]
-            sum += sample * sample
-        }
-        let rms = sqrt(sum / Float(length))
-        return min(max(rms * 5.0, 0.05), 1.0)
-    }
 }
+
+/// Convenience alias to explicitly represent AudioPipeline
+public typealias AudioPipeline = UnifiedAudioCapture

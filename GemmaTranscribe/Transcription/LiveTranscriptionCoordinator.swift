@@ -27,7 +27,8 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     @Published public var isPostStopSheetPresented: Bool = false
     @Published public var elapsedSeconds: Double = 0
     
-    public let audioCapture = UnifiedAudioCapture()
+    public let audioPipeline = AudioPipeline()
+    public var audioCapture: AudioPipeline { audioPipeline }
     private let modelManager = ModelManager.shared
     private let historyStore = TranscriptionHistoryStore.shared
     
@@ -43,19 +44,19 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     }
     
     public init() {
-        // Stream raw hardware audio buffers directly to speech recognizer
-        audioCapture.onRawBufferAvailable = { [weak self] buffer in
+        // Stream raw hardware audio buffers directly to active speech recognizer
+        audioPipeline.onRawBufferAvailable = { [weak self] buffer in
             self?.modelManager.appleFallbackEngine.appendRawBuffer(buffer)
         }
         
         // Handle chunk intervals for models and duration
-        audioCapture.onAudioChunkAvailable = { chunk in
+        audioPipeline.onAudioChunkAvailable = { chunk in
             Task { @MainActor in
                 await LiveTranscriptionCoordinator.shared.processAudioChunk(chunk)
             }
         }
         
-        audioCapture.onElapsedSecondsUpdated = { seconds in
+        audioPipeline.onElapsedSecondsUpdated = { seconds in
             Task { @MainActor in
                 LiveTranscriptionCoordinator.shared.elapsedSeconds = seconds
             }
@@ -84,7 +85,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         elapsedSeconds = 0
         recordingStartTime = Date()
         
-        // Start streaming recognition
+        // Start streaming recognition on-device
         modelManager.appleFallbackEngine.startStreaming { recognizedText in
             Task { @MainActor in
                 LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
@@ -95,7 +96,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         let effectiveDuration = chunkDuration > 0 ? chunkDuration : AppConfig.defaultAudioChunkDuration
         
         do {
-            try await audioCapture.startCapture(chunkDuration: effectiveDuration)
+            try await audioPipeline.startCapture(chunkDuration: effectiveDuration)
             logger.info("Recording session started")
         } catch {
             status = .failed
@@ -110,7 +111,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         status = .transcribing
         modelManager.appleFallbackEngine.stopStreaming()
         
-        let finalAudioSamples = await audioCapture.stopCapture()
+        let finalAudioSamples = await audioPipeline.stopCapture()
         let duration = max(1, Int(self.elapsedSeconds.rounded()))
         
         // 1. Check Gemma 3n E2B model inference if model is downloaded
@@ -119,7 +120,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         
         if isGemmaDownloaded && !finalAudioSamples.isEmpty {
             logger.info("Executing Google Gemma 3n E2B local model transcription...")
-            if let gemmaText = try? await modelManager.activeEngine.transcribe(audioSamples: finalAudioSamples), !gemmaText.isEmpty {
+            if let gemmaText = try? await modelManager.activeEngine.processAudio(samples: finalAudioSamples), !gemmaText.isEmpty {
                 cleanText = TranscriptCleaner.clean(gemmaText)
                 self.fullRawTranscript = gemmaText
                 self.interimText = cleanText
@@ -134,25 +135,13 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
             cleanText = TranscriptCleaner.clean(fullRawTranscript)
         }
         
-        // 2. Fallback: If on-device speech engine didn't catch speech, fallback to Cloudflare Whisper
-        if cleanText.isEmpty && !finalAudioSamples.isEmpty {
-            logger.info("Falling back to Cloudflare Whisper with \(finalAudioSamples.count) samples...")
-            let wavData = WAVEncoder.encode(samples: finalAudioSamples)
-            if let cloudText = try? await CloudflareBrainService.transcribeAudio(wavData: wavData), !cloudText.isEmpty {
-                cleanText = TranscriptCleaner.clean(cloudText)
-                self.fullRawTranscript = cloudText
-                self.interimText = cleanText
-                logger.info("Cloudflare Whisper successfully transcribed speech: \(cleanText.prefix(40))...")
-            }
-        }
-        
         let hasSpeech = !cleanText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let finalCleanText = hasSpeech ? cleanText : "Речь не была распознана (тишина или неразборчиво)"
         self.currentCleanTranscript = finalCleanText
         
-        // Trigger Cloudflare Post-STOP AI Processing & Web Search if we have speech
+        // Trigger Cloudflare Post-STOP AI Processing & Web Search with CLEAN transcript only
         status = .processing
-        logger.info("Processing post-stop: \(finalCleanText.prefix(40))...")
+        logger.info("Processing post-stop with clean transcript: \(finalCleanText.prefix(40))...")
         
         let engineName = isGemmaDownloaded
             ? "Google Gemma 3n E2B (LiteRT)"
@@ -228,7 +217,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         guard !samples.isEmpty else { return }
         
         do {
-            let rawChunkText = try await modelManager.activeEngine.transcribe(audioSamples: samples)
+            let rawChunkText = try await modelManager.activeEngine.processAudio(samples: samples)
             guard !rawChunkText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             
             fullRawTranscript += (fullRawTranscript.isEmpty ? "" : " ") + rawChunkText

@@ -2,29 +2,44 @@
 //  SpeechModelEngine.swift
 //  GemmaTranscribe
 //
-//  Pluggable local speech model engine protocol.
-//  Enables swapping local models (Gemma 3n E2B, LiteRT models) without rewriting the app.
+//  Pluggable local speech model engine & ASRProvider protocols.
+//  Enables swapping local models (LiteRT Gemma 3n, Whisper, Apple Neural Speech)
+//  without modifying audio or UI pipelines.
 //
 
 import Foundation
 import AVFoundation
 
-public protocol SpeechModelEngine: AnyObject, Sendable {
-    /// The unique identifier of this engine or active model
-    var modelId: String { get }
+/// Universal Local ASR Provider protocol conforming to the modular speech pipeline.
+public protocol ASRProvider: AnyObject, Sendable {
+    /// Unique identifier for this speech model provider
+    var providerId: String { get }
     
-    /// Display name of the active model
+    /// User-facing display name
     var displayName: String { get }
     
-    /// Whether the engine weights are loaded into memory / ready for inference
+    /// Whether the model weights are loaded and ready in memory
+    var isReady: Bool { get }
+    
+    /// Transcribes an audio buffer of 16kHz mono Float32 samples
+    func processAudio(samples: [Float]) async throws -> String
+}
+
+/// Extended speech model engine for models loaded from disk directories
+public protocol SpeechModelEngine: ASRProvider {
+    var modelId: String { get }
     var isLoaded: Bool { get }
     
-    /// Prepares and loads the model from a local directory on disk
     func loadModel(from localDirectory: URL) async throws
-    
-    /// Unloads weights from memory
     func unload() async
-    
-    /// Transcribes an audio chunk (16kHz mono Float32 PCM samples) in realtime
     func transcribe(audioSamples: [Float]) async throws -> String
+}
+
+extension SpeechModelEngine {
+    public var providerId: String { modelId }
+    public var isReady: Bool { isLoaded }
+    
+    public func processAudio(samples: [Float]) async throws -> String {
+        try await transcribe(audioSamples: samples)
+    }
 }

@@ -2,8 +2,11 @@
 //  CloudflareBrainService.swift
 //  GemmaTranscribe
 //
-//  Cloudflare Workers AI client for post-STOP reasoning, structured enrichment,
-//  and full-text Web / Wikipedia knowledge base extraction.
+//  Cloudflare Workers AI backend & contextual search pipeline:
+//  1. Analyzes speech context and identifies true user intent (dictation vs. search request).
+//  2. Decouples search intent from raw transcript: never searches blindly on pure dictation.
+//  3. When search intent is detected, invokes SearchProvider with refined semantic query.
+//  4. Synthesizes structured knowledge cards, clean summary, and action items.
 //
 
 import Foundation
@@ -11,7 +14,94 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.gemmatranscribe.app", category: "CloudflareBrainService")
 
+// MARK: - Modular Search Provider Protocol
+
+public protocol SearchProvider: Sendable {
+    func search(query: String, locale: String) async -> WebSearchCitation?
+}
+
+public struct WikipediaSearchProvider: SearchProvider {
+    public init() {}
+    
+    public func search(query: String, locale: String) async -> WebSearchCitation? {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return nil }
+        
+        let domain = locale.hasPrefix("en") ? "en.wikipedia.org" : "ru.wikipedia.org"
+        guard let encodedQuery = trimmedQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
+        
+        // Step 1: Full-text search for the most relevant article
+        guard let searchURL = URL(string: "https://\(domain)/w/api.php?action=query&list=search&srsearch=\(encodedQuery)&utf8=1&format=json&srlimit=1") else {
+            return nil
+        }
+        
+        var searchReq = URLRequest(url: searchURL)
+        searchReq.setValue("GemmaTranscribe/1.0 (iOS; Speech Intelligence)", forHTTPHeaderField: "User-Agent")
+        searchReq.timeoutInterval = 7.0
+        
+        guard let (searchData, _) = try? await URLSession.shared.data(for: searchReq),
+              let searchJson = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
+              let queryObj = searchJson["query"] as? [String: Any],
+              let searchResults = queryObj["search"] as? [[String: Any]],
+              let firstMatch = searchResults.first,
+              let foundTitle = firstMatch["title"] as? String else {
+            return nil
+        }
+        
+        let rawSnippet = firstMatch["snippet"] as? String ?? ""
+        let cleanedSnippet = rawSnippet
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // Step 2: Fetch rich plain-text extract for this exact title
+        var fullDefinition = cleanedSnippet
+        if let encodedTitle = foundTitle.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+           let extractURL = URL(string: "https://\(domain)/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=\(encodedTitle)&format=json") {
+            
+            var extReq = URLRequest(url: extractURL)
+            extReq.setValue("GemmaTranscribe/1.0 (iOS; Speech Intelligence)", forHTTPHeaderField: "User-Agent")
+            extReq.timeoutInterval = 7.0
+            
+            if let (extData, _) = try? await URLSession.shared.data(for: extReq),
+               let extJson = try? JSONSerialization.jsonObject(with: extData) as? [String: Any],
+               let extQuery = extJson["query"] as? [String: Any],
+               let pages = extQuery["pages"] as? [String: Any] {
+                
+                for (_, pageVal) in pages {
+                    if let pageDict = pageVal as? [String: Any],
+                       let extractText = pageDict["extract"] as? String,
+                       !extractText.isEmpty {
+                        let sentences = extractText.components(separatedBy: ". ")
+                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                            .filter { !$0.isEmpty }
+                        if !sentences.isEmpty {
+                            fullDefinition = sentences.prefix(3).joined(separator: ". ")
+                            if !fullDefinition.hasSuffix(".") { fullDefinition += "." }
+                        }
+                        break
+                    }
+                }
+            }
+        }
+        
+        let articleUrl = "https://\(domain)/wiki/\(foundTitle.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "")"
+        
+        logger.info("SearchProvider found: '\(foundTitle, privacy: .public)' (Snippet: \(fullDefinition.prefix(40), privacy: .public)...)")
+        
+        return WebSearchCitation(
+            query: trimmedQuery,
+            title: foundTitle,
+            snippet: fullDefinition,
+            url: articleUrl
+        )
+    }
+}
+
+// MARK: - Cloudflare Brain Service
+
 public enum CloudflareBrainService {
+    
+    public static var searchProvider: SearchProvider = WikipediaSearchProvider()
     
     public struct ResolvedEndpoint {
         public let url: URL
@@ -135,6 +225,10 @@ public enum CloudflareBrainService {
         return transcribed
     }
 
+    /// Processes the cleaned transcript:
+    /// - Evaluates intent: determines if search is actually needed or if it's pure dictation.
+    /// - Fetches contextual web knowledge only when appropriate.
+    /// - Generates accurate summary and structured concept cards.
     public static func process(cleanTranscript: String, locale: String = "ru") async throws -> CloudflareBrainResponse {
         let trimmed = cleanTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -148,71 +242,64 @@ public enum CloudflareBrainService {
             )
         }
         
-        // 1. Semantic Web Search across Wikipedia & Knowledge Base
-        let searchQuery = extractSearchQuery(from: trimmed)
-        let webCitation = await performWebSearch(query: searchQuery, locale: locale)
-        
         guard let endpoint = resolveEndpoint() else {
-            logger.warning("Could not resolve Cloudflare endpoint, using local enrichment")
-            return fallbackLocalEnrichment(cleanTranscript: trimmed, searchResult: webCitation)
+            logger.warning("Could not resolve Cloudflare endpoint, using local intent enrichment")
+            return await fallbackLocalEnrichment(cleanTranscript: trimmed, locale: locale)
         }
         
         if endpoint.isDirectAI {
             return try await processDirectWorkersAI(
                 cleanTranscript: trimmed,
-                searchResult: webCitation,
                 endpoint: endpoint,
                 locale: locale
             )
         } else {
             return try await processCustomWorker(
                 cleanTranscript: trimmed,
-                searchResult: webCitation,
                 endpoint: endpoint,
                 locale: locale
             )
         }
     }
     
-    // MARK: - Direct Workers AI Execution
+    // MARK: - Direct Workers AI Execution with Context-Aware Search Intent
     
     private static func processDirectWorkersAI(
         cleanTranscript: String,
-        searchResult: WebSearchCitation?,
         endpoint: ResolvedEndpoint,
         locale: String
     ) async throws -> CloudflareBrainResponse {
-        logger.info("Executing Direct Cloudflare Workers AI request to: \(endpoint.url.absoluteString, privacy: .public)")
-        
-        var searchContext = ""
-        if let citation = searchResult {
-            let title = citation.title ?? ""
-            let snippet = citation.snippet ?? ""
-            let url = citation.url ?? ""
-            searchContext = """
-            СПРАВКА ИЗ БАЗЫ ЗНАНИЙ И ИНТЕРНЕТА:
-            Тема/Понятие: \(title)
-            Определение: \(snippet)
-            Ссылка: \(url)
-            
-            """
-        }
+        logger.info("Executing Context-Aware Workers AI request to: \(endpoint.url.absoluteString, privacy: .public)")
         
         let systemPrompt = """
-        Ты — экспертный аналитический AI-ассистент в iOS-приложении GemmaTranscribe.
-        Твоя задача — детально проанализировать стенограмму речи пользователя и факты из базы знаний/поиска, выделить ключевые понятия и структурировать результат.
+        Ты — аналитический AI-ассистент в приложении GemmaTranscribe.
+        Твоя задача — внимательно изучить очищенную стенограмму речи пользователя и сформировать структурированный результат.
+
+        КРИТИЧЕСКИЕ ПРАВИЛА:
+        1. Определение поискового интента ("needs_search"):
+           - Установи "needs_search": true ТОЛЬКО если пользователь прямо задаёт вопрос («Что такое...», «Кто такой...», «Расскажи про...») или явно просит найти информацию («Поищи в интернете...»).
+           - Установи "needs_search": false, если пользователь просто надиктовывает свои мысли, конспект, лекцию или рабочий материал (например, фраза «Я буду начитывать материал» НЕ ЯВЛЯЕТСЯ поисковым запросом!).
+           - Если "needs_search": true, укажи в "search_query" точное ключевое понятие или имя сущности (например: "Квантовая запутанность", "Илон Маск"). Никаких случайных обрывков фраз!
+           - Если "needs_search": false, значение "search_query" должно быть null.
         
-        ВАЖНЫЕ ПРАВИЛА:
-        1. В "summary": Сформулируй развернутое резюме речи и прямой, содержательный ответ на вопрос или запрос пользователя (2-3 предложения на русском языке).
-        2. В "cards": Сформируй от 1 до 3 информативных карточек понятий.
-           - "term": Полное, точное название понятия (например, "Квантовая запутанность", "Машинное обучение", "Илон Маск"), а НЕ одно случайное слово!
-           - "definition": Подробное, ясное и правильное определение или объяснение сущности. Ни в коем случае не искажай смысл!
-           - "notes": Массив из 2-3 ключевых фактов или контекстных деталей.
-           - "source": Название источника или ссылка на статью.
-        3. В "actionPoints": Практические выводы, тезисы или действия (1-3 пункта).
+        2. Резюме ("summary"):
+           - Сформулируй 1-3 связных предложения с сутью сказанного пользователем на русском языке.
         
+        3. Карточки понятий ("cards"):
+           - 1-3 понятных карточки по теме речи:
+             "term": точное название термина (НЕ одно слово наугад, а полный термин);
+             "definition": чёткое правильное определение, сохраняющее исходный смысл;
+             "notes": 2-3 ключевых тезиса;
+             "source": источник или ссылка (если есть).
+        
+        4. Действия/выводы ("actionPoints"):
+           - 1-3 практических пункта или вывода из стенограммы.
+
         Верни ответ СТРОГО в виде валидного JSON без markdown-блоков:
         {
+          "intent": "dictation | question | search_request",
+          "needs_search": false,
+          "search_query": null,
           "summary": "...",
           "cards": [
             {
@@ -227,7 +314,7 @@ public enum CloudflareBrainService {
         Язык ответа: \(locale.hasPrefix("en") ? "English" : "Russian").
         """
         
-        let userPrompt = "\(searchContext)Стенограмма речи:\n\"\(cleanTranscript)\""
+        let userPrompt = "Стенограмма речи:\n\"\(cleanTranscript)\""
         
         let payload: [String: Any] = [
             "messages": [
@@ -239,7 +326,7 @@ public enum CloudflareBrainService {
         ]
         
         guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else {
-            return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+            return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
         }
         
         var request = URLRequest(url: endpoint.url)
@@ -252,32 +339,32 @@ public enum CloudflareBrainService {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+                return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
             }
             
             if httpResponse.statusCode == 401 || httpResponse.statusCode == 403 {
                 logger.error("Cloudflare authorization failed (HTTP \(httpResponse.statusCode))")
-                return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+                return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
             }
             
             guard (200...299).contains(httpResponse.statusCode) else {
                 logger.warning("Cloudflare HTTP \(httpResponse.statusCode), using local enrichment")
-                return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+                return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
             }
             
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let result = json["result"] as? [String: Any],
                let responseText = result["response"] as? String {
                 
-                if let parsedResponse = parseJsonModelResponse(responseText, searchResult: searchResult, model: endpoint.model) {
+                if let parsedResponse = await parseJsonModelResponse(responseText, cleanTranscript: cleanTranscript, model: endpoint.model, locale: locale) {
                     return parsedResponse
                 }
             }
             
-            return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+            return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
         } catch {
-            logger.warning("Direct Workers AI call failed: \(error.localizedDescription), using web knowledge enrichment")
-            return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+            logger.warning("Direct Workers AI call failed: \(error.localizedDescription), using local intent enrichment")
+            return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
         }
     }
     
@@ -285,7 +372,6 @@ public enum CloudflareBrainService {
     
     private static func processCustomWorker(
         cleanTranscript: String,
-        searchResult: WebSearchCitation?,
         endpoint: ResolvedEndpoint,
         locale: String
     ) async throws -> CloudflareBrainResponse {
@@ -295,7 +381,7 @@ public enum CloudflareBrainService {
         ]
         
         guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else {
-            return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+            return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
         }
         
         var request = URLRequest(url: endpoint.url)
@@ -309,7 +395,7 @@ public enum CloudflareBrainService {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse, (200...299).contains(httpResponse.statusCode) else {
-                return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+                return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
             }
             
             let decoder = JSONDecoder()
@@ -317,11 +403,11 @@ public enum CloudflareBrainService {
             let brainResponse = try decoder.decode(CloudflareBrainResponse.self, from: data)
             return brainResponse
         } catch {
-            return fallbackLocalEnrichment(cleanTranscript: cleanTranscript, searchResult: searchResult)
+            return await fallbackLocalEnrichment(cleanTranscript: cleanTranscript, locale: locale)
         }
     }
     
-    // MARK: - Deep Diagnostics Connection Testing
+    // MARK: - Connection Diagnostics
     
     public static func testConnection() async -> (success: Bool, message: String) {
         guard let endpoint = resolveEndpoint() else {
@@ -336,14 +422,12 @@ public enum CloudflareBrainService {
             return (false, "Не заполнен API Key Cloudflare.")
         }
         
-        // Detect Global API Key (prefix cfk_ or legacy hex)
         let isGlobalKey = cleanKey.hasPrefix("cfk_") || (cleanKey.count == 37 && cleanKey.range(of: "^[a-fA-F0-9]{37}$", options: .regularExpression) != nil)
         
         if isGlobalKey && email.isEmpty {
             return (false, "Ключ '\(cleanKey.prefix(4))...' — это Global API Key. Для него обязательно заполните Email вашей учетной записи Cloudflare в Настройках. Либо создайте API Token в dash.cloudflare.com/profile/api-tokens.")
         }
         
-        // If Bearer API Token (not Global Key), check token validity at user/tokens/verify
         if !isGlobalKey && email.isEmpty && endpoint.isDirectAI {
             if let tokenVerification = await verifyTokenValidity(cleanKey) {
                 if !tokenVerification.isValid {
@@ -352,7 +436,6 @@ public enum CloudflareBrainService {
             }
         }
         
-        // Second step: test actual AI execution on the account
         var request = URLRequest(url: endpoint.url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -418,7 +501,6 @@ public enum CloudflareBrainService {
         }
     }
     
-    /// Verifies the token directly against Cloudflare's token verification endpoint
     private static func verifyTokenValidity(_ cleanToken: String) async -> (isValid: Bool, detail: String)? {
         guard let url = URL(string: "https://api.cloudflare.com/client/v4/user/tokens/verify") else {
             return nil
@@ -447,142 +529,14 @@ public enum CloudflareBrainService {
         return (false, "HTTP \(http.statusCode)")
     }
     
-    // MARK: - Smart Semantic Search Query Extraction
+    // MARK: - JSON Response Parsing & Search Intent Resolution
     
-    public static func extractSearchQuery(from text: String) -> String {
-        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        cleaned = cleaned.trimmingCharacters(in: CharacterSet(charactersIn: "\"\'«».,!?()"))
-        guard !cleaned.isEmpty else { return "" }
-        
-        let prefixPatterns: [String] = [
-            "^(?:поищи|найди|ищи)\\s+(?:в\\s+интернете\\s+)?(?:информацию\\s+)?(?:про|о|об)?\\s*",
-            "^(?:что\\s+такое|что\\s+значит|кто\\s+такой|кто\\s+такая|кто\\s+такие)\\s*",
-            "^(?:расскажи\\s+(?:мне\\s+)?(?:про|о|об))\\s*",
-            "^(?:объясни\\s+(?:мне\\s+)?(?:что\\s+такое|как\\s+работает|про|о|об)?)\\s*",
-            "^(?:как\\s+(?:работает|устроен|устроена|устроены|сделать|понять))\\s*",
-            "^(?:в\\s+чем\\s+(?:суть|смысл|разница))\\s*",
-            "^(?:what\\s+is|who\\s+is|tell\\s+me\\s+about|explain|how\\s+does)\\s*",
-            "^(?:search\\s+for|find\\s+information\\s+about)\\s*"
-        ]
-        
-        for pattern in prefixPatterns {
-            if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) {
-                let range = NSRange(cleaned.startIndex..<cleaned.endIndex, in: cleaned)
-                if let match = regex.firstMatch(in: cleaned, options: [], range: range), match.range.location == 0 {
-                    if let swiftRange = Range(match.range, in: cleaned) {
-                        var extracted = String(cleaned[swiftRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        if let commaIdx = extracted.range(of: "(?:[?.,!]|\\s+и\\s+(?:как|чем)|\\s+а\\s+также)", options: .regularExpression) {
-                            extracted = String(extracted[..<commaIdx.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                        }
-                        if extracted.count >= 2 {
-                            return extracted
-                        }
-                    }
-                }
-            }
-        }
-        
-        let firstSentence = cleaned.components(separatedBy: CharacterSet(charactersIn: ".!?\n")).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? cleaned
-        
-        let fillerWords: Set<String> = [
-            "привет", "здравствуй", "здравствуйте", "слушай", "пожалуйста",
-            "короче", "в общем", "сегодня", "хочу", "хотел", "сказать", "запись",
-            "тест", "проверка", "кстати", "ну", "типа", "значит", "так",
-            "hello", "hi", "today", "please", "basically", "actually"
-        ]
-        
-        let words = firstSentence.components(separatedBy: .whitespacesAndNewlines)
-            .map { $0.trimmingCharacters(in: CharacterSet(charactersIn: ".,!?:;\"'()")) }
-            .filter { !fillerWords.contains($0.lowercased()) && !$0.isEmpty }
-        
-        if !words.isEmpty {
-            let candidate = words.prefix(6).joined(separator: " ")
-            if candidate.count >= 3 {
-                return candidate
-            }
-        }
-        
-        return String(cleaned.prefix(60)).trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-    
-    // MARK: - Full-Text Knowledge Base & Wikipedia Web Search
-    
-    private static func performWebSearch(query: String, locale: String) async -> WebSearchCitation? {
-        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedQuery.isEmpty else { return nil }
-        
-        let domain = locale.hasPrefix("en") ? "en.wikipedia.org" : "ru.wikipedia.org"
-        guard let encodedQuery = trimmedQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else { return nil }
-        
-        // Step 1: Full-text search for the most relevant article
-        guard let searchURL = URL(string: "https://\(domain)/w/api.php?action=query&list=search&srsearch=\(encodedQuery)&utf8=1&format=json&srlimit=1") else {
-            return nil
-        }
-        
-        var searchReq = URLRequest(url: searchURL)
-        searchReq.setValue("GemmaTranscribe/1.0 (iOS; Speech Intelligence)", forHTTPHeaderField: "User-Agent")
-        searchReq.timeoutInterval = 7.0
-        
-        guard let (searchData, _) = try? await URLSession.shared.data(for: searchReq),
-              let searchJson = try? JSONSerialization.jsonObject(with: searchData) as? [String: Any],
-              let queryObj = searchJson["query"] as? [String: Any],
-              let searchResults = queryObj["search"] as? [[String: Any]],
-              let firstMatch = searchResults.first,
-              let foundTitle = firstMatch["title"] as? String else {
-            return nil
-        }
-        
-        let rawSnippet = firstMatch["snippet"] as? String ?? ""
-        let cleanedSnippet = rawSnippet
-            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // Step 2: Fetch rich, clean plain-text extract for this exact title
-        var fullDefinition = cleanedSnippet
-        if let encodedTitle = foundTitle.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
-           let extractURL = URL(string: "https://\(domain)/w/api.php?action=query&prop=extracts&exintro=1&explaintext=1&titles=\(encodedTitle)&format=json") {
-            
-            var extReq = URLRequest(url: extractURL)
-            extReq.setValue("GemmaTranscribe/1.0 (iOS; Speech Intelligence)", forHTTPHeaderField: "User-Agent")
-            extReq.timeoutInterval = 7.0
-            
-            if let (extData, _) = try? await URLSession.shared.data(for: extReq),
-               let extJson = try? JSONSerialization.jsonObject(with: extData) as? [String: Any],
-               let extQuery = extJson["query"] as? [String: Any],
-               let pages = extQuery["pages"] as? [String: Any] {
-                
-                for (_, pageVal) in pages {
-                    if let pageDict = pageVal as? [String: Any],
-                       let extractText = pageDict["extract"] as? String,
-                       !extractText.isEmpty {
-                        let sentences = extractText.components(separatedBy: ". ")
-                            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                            .filter { !$0.isEmpty }
-                        if !sentences.isEmpty {
-                            fullDefinition = sentences.prefix(3).joined(separator: ". ")
-                            if !fullDefinition.hasSuffix(".") { fullDefinition += "." }
-                        }
-                        break
-                    }
-                }
-            }
-        }
-        
-        let articleUrl = "https://\(domain)/wiki/\(foundTitle.replacingOccurrences(of: " ", with: "_").addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? "")"
-        
-        logger.info("Web search found: '\(foundTitle, privacy: .public)' (Def: \(fullDefinition.prefix(50), privacy: .public)...)")
-        
-        return WebSearchCitation(
-            query: trimmedQuery,
-            title: foundTitle,
-            snippet: fullDefinition,
-            url: articleUrl
-        )
-    }
-    
-    // MARK: - JSON Response Parsing
-    
-    private static func parseJsonModelResponse(_ responseText: String, searchResult: WebSearchCitation?, model: String) -> CloudflareBrainResponse? {
+    private static func parseJsonModelResponse(
+        _ responseText: String,
+        cleanTranscript: String,
+        model: String,
+        locale: String
+    ) async -> CloudflareBrainResponse? {
         var clean = responseText.trimmingCharacters(in: .whitespacesAndNewlines)
         if clean.hasPrefix("```json") {
             clean = String(clean.dropFirst(7))
@@ -605,6 +559,22 @@ public enum CloudflareBrainService {
             return nil
         }
         
+        let needsSearch = (json["needs_search"] as? Bool) ?? (json["needsSearch"] as? Bool) ?? false
+        let rawQuery = (json["search_query"] as? String) ?? (json["searchQuery"] as? String)
+        let searchQuery = rawQuery?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        
+        var webSearchCitation: WebSearchCitation? = nil
+        var didSearch = false
+        
+        // Execute Search ONLY if the model specifically detected a search intent and provided a valid query
+        if needsSearch && !searchQuery.isEmpty {
+            logger.info("Contextual search intent detected: query='\(searchQuery, privacy: .public)'")
+            webSearchCitation = await searchProvider.search(query: searchQuery, locale: locale)
+            didSearch = (webSearchCitation != nil)
+        } else {
+            logger.info("Pure dictation detected; external search bypassed to avoid false matches")
+        }
+        
         let summary = json["summary"] as? String ?? ""
         var cards: [DefinitionCard] = []
         if let rawCards = json["cards"] as? [[String: Any]] {
@@ -613,19 +583,29 @@ public enum CloudflareBrainService {
                 let def = c["definition"] as? String ?? ""
                 guard !term.isEmpty, !def.isEmpty else { continue }
                 let notes = c["notes"] as? [String] ?? []
-                let source = c["source"] as? String ?? (searchResult?.url ?? "")
+                let source = c["source"] as? String ?? (webSearchCitation?.url ?? "")
                 cards.append(DefinitionCard(term: term, definition: def, notes: notes, source: source))
             }
         }
         
-        // If AI returned empty cards but web search has authentic result, inject search card
-        if cards.isEmpty, let citation = searchResult, let title = citation.title, let snip = citation.snippet {
-            cards.append(DefinitionCard(
-                term: title,
-                definition: snip,
-                notes: ["Извлечено из проверенной базы знаний"],
-                source: citation.url
-            ))
+        // If web citation exists and matched a term, enrich or insert top card
+        if let citation = webSearchCitation, let title = citation.title, let snip = citation.snippet {
+            let matchedIndex = cards.firstIndex { $0.term.localizedCaseInsensitiveContains(title) || title.localizedCaseInsensitiveContains($0.term) }
+            if let idx = matchedIndex {
+                cards[idx] = DefinitionCard(
+                    term: title,
+                    definition: snip,
+                    notes: cards[idx].notes ?? ["Проверенное энциклопедическое определение"],
+                    source: citation.url
+                )
+            } else {
+                cards.insert(DefinitionCard(
+                    term: title,
+                    definition: snip,
+                    notes: ["Извлечено из проверенной базы знаний Wikipedia"],
+                    source: citation.url
+                ), at: 0)
+            }
         }
         
         let actionPoints = json["actionPoints"] as? [String] ?? (json["action_points"] as? [String] ?? [])
@@ -634,33 +614,45 @@ public enum CloudflareBrainService {
             summary: summary,
             cards: cards,
             actionPoints: actionPoints,
-            webSearch: searchResult,
+            webSearch: webSearchCitation,
             model: model,
-            searched: searchResult != nil
+            searched: didSearch
         )
     }
     
     // MARK: - Reliable Fallback Knowledge Enrichment
     
-    private static func fallbackLocalEnrichment(cleanTranscript: String, searchResult: WebSearchCitation? = nil) -> CloudflareBrainResponse {
-        let query = searchResult?.query ?? extractSearchQuery(from: cleanTranscript)
-        let title = searchResult?.title ?? (query.isEmpty ? "Тезис записи" : query.capitalized)
+    private static func fallbackLocalEnrichment(cleanTranscript: String, locale: String) async -> CloudflareBrainResponse {
+        let isQuestionOrSearch = hasExplicitSearchIntent(cleanTranscript)
+        var searchCitation: WebSearchCitation? = nil
+        var didSearch = false
+        
+        if isQuestionOrSearch {
+            let extracted = extractFallbackSearchQuery(from: cleanTranscript)
+            if !extracted.isEmpty {
+                searchCitation = await searchProvider.search(query: extracted, locale: locale)
+                didSearch = (searchCitation != nil)
+            }
+        }
+        
+        let query = searchCitation?.query ?? extractFallbackSearchQuery(from: cleanTranscript)
+        let title = searchCitation?.title ?? (query.isEmpty ? "Тезис записи" : query.capitalized)
         
         let definition: String
         let sourceUrl: String?
         let notes: [String]
         
-        if let citation = searchResult, let snip = citation.snippet, !snip.isEmpty {
+        if let citation = searchCitation, let snip = citation.snippet, !snip.isEmpty {
             definition = snip
             sourceUrl = citation.url
             notes = [
                 "Информация получена из проверенной базы знаний Wikipedia.",
-                "Соответствует теме стенограммы: «\(query)»"
+                "Соответствует поисковому запросу: «\(query)»"
             ]
         } else {
-            definition = "Ключевое понятие, зафиксированное в стенограмме речи: «\(cleanTranscript.prefix(120))»."
+            definition = "Ключевое содержание стенограммы: «\(cleanTranscript.prefix(140))»."
             sourceUrl = nil
-            notes = ["Обработано аналитическим модулем."]
+            notes = ["Сформировано локальным модулем анализа речи."]
         }
         
         let card = DefinitionCard(
@@ -671,7 +663,7 @@ public enum CloudflareBrainService {
         )
         
         let summaryText: String
-        if let citation = searchResult, let snip = citation.snippet, !snip.isEmpty {
+        if let citation = searchCitation, let snip = citation.snippet, !snip.isEmpty {
             summaryText = "По запросу «\(query)» найдена справка: **\(title)**.\n\(snip)"
         } else {
             summaryText = cleanTranscript.prefix(180) + (cleanTranscript.count > 180 ? "..." : "")
@@ -680,10 +672,45 @@ public enum CloudflareBrainService {
         return CloudflareBrainResponse(
             summary: summaryText,
             cards: [card],
-            actionPoints: ["Изучить ключевые понятия стенограммы", "Сохранить важные тезисы в заметки"],
-            webSearch: searchResult,
-            model: "Gemma Brain (Knowledge Base)",
-            searched: searchResult != nil
+            actionPoints: isQuestionOrSearch ? ["Изучить подробнее по теме: \(title)"] : ["Сохранено в историю записей"],
+            webSearch: searchCitation,
+            model: "local-intent-enrichment",
+            searched: didSearch
         )
+    }
+    
+    private static func hasExplicitSearchIntent(_ text: String) -> Bool {
+        let patterns = [
+            #"(?i)\b(что такое|кто такой|кто такая|кто такие|что значит)\b"#,
+            #"(?i)\b(поищи|найди в интернете|найди информацию|расскажи про|объясни)\b"#,
+            #"(?i)\b(what is|who is|tell me about|how does)\b"#
+        ]
+        for pattern in patterns {
+            if text.range(of: pattern, options: .regularExpression) != nil {
+                return true
+            }
+        }
+        return false
+    }
+    
+    private static func extractFallbackSearchQuery(from text: String) -> String {
+        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefixPatterns: [String] = [
+            "^(?:поищи|найди|ищи)\\s+(?:в\\s+интернете\\s+)?(?:информацию\\s+)?(?:про|о|об)?\\s*",
+            "^(?:что\\s+такое|что\\s+значит|кто\\s+такой|кто\\s+такая|кто\\s+такие)\\s*",
+            "^(?:расскажи\\s+(?:мне\\s+)?(?:про|о|об))\\s*",
+            "^(?:объясни\\s+(?:мне\\s+)?(?:что\\s+такое|как\\s+работает|про|о|об)?)\\s*",
+            "^(?:what\\s+is|who\\s+is|tell\\s+me\\s+about)\\s*"
+        ]
+        for pattern in prefixPatterns {
+            if let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]),
+               let match = regex.firstMatch(in: cleaned, range: NSRange(cleaned.startIndex..<cleaned.endIndex, in: cleaned)),
+               match.range.location == 0,
+               let range = Range(match.range, in: cleaned) {
+                let candidate = String(cleaned[range.upperBound...]).trimmingCharacters(in: CharacterSet(charactersIn: " .,!?\"'"))
+                if candidate.count >= 2 { return candidate }
+            }
+        }
+        return ""
     }
 }
