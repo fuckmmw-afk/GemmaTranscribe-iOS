@@ -29,6 +29,7 @@ public struct SettingsView: View {
     @State private var isSecureApiKey = true
     @State private var isSecureHfToken = true
     @State private var showGlobalKeyEmail = false
+    @State private var isSourceCopied = false
     
     public var body: some View {
         NavigationStack {
@@ -280,6 +281,33 @@ public struct SettingsView: View {
                         Spacer()
                         Text("16kHz Mono Float32 PCM")
                             .foregroundColor(.secondary)
+                    }
+                }
+                
+                // Section: Feather / OTA Updates
+                Section(
+                    header: Text("Обновление приложения (Feather)"),
+                    footer: Text("Добавьте этот источник в Feather (Вкладка Sources -> «+»). При появлении новой сборки Feather покажет кнопку «Update», и приложение обновится прямо на iPhone без ПК.")
+                ) {
+                    Button {
+                        UIPasteboard.general.string = "https://github.com/fuckmmw-afk/GemmaTranscribe-iOS/releases/latest/download/feather-source.json"
+                        isSourceCopied = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                            isSourceCopied = false
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: isSourceCopied ? "checkmark.circle.fill" : "doc.on.doc")
+                                .foregroundColor(isSourceCopied ? .green : .dictusAccent)
+                            Text(isSourceCopied ? "Ссылка источника скопирована!" : "Скопировать источник для Feather")
+                                .foregroundColor(.primary)
+                        }
+                    }
+                    
+                    if let directIpa = URL(string: "https://github.com/fuckmmw-afk/GemmaTranscribe-iOS/releases/latest/download/GemmaTranscribe.ipa") {
+                        Link(destination: directIpa) {
+                            Label("Скачать последний IPA напрямую", systemImage: "arrow.down.circle")
+                        }
                     }
                 }
                 

@@ -1,0 +1,19 @@
+{
+  "name": "GemmaTranscribe",
+  "identifier": "com.gemmatranscribe.source",
+  "apps": [
+    {
+      "name": "GemmaTranscribe",
+      "bundleIdentifier": "com.gemmatranscribe.app",
+      "developerName": "Google AI Edge Transcribe",
+      "version": "1.0.1",
+      "versionDate": "2026-09-08T16:35:00Z",
+      "versionDescription": "Google Gemma 3n E2B On-Device AI Transcriber",
+      "downloadURL": "https://github.com/fuckmmw-afk/GemmaTranscribe-iOS/releases/latest/download/GemmaTranscribe.ipa",
+      "localizedDescription": "Локальное распознавание речи на базе Google Gemma 3n E2B и Cloudflare AI.",
+      "iconURL": "https://raw.githubusercontent.com/fuckmmw-afk/GemmaTranscribe-iOS/main/GemmaTranscribe/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png",
+      "tintColor": "#2997FF",
+      "size": 2048000
+    }
+  ]
+}

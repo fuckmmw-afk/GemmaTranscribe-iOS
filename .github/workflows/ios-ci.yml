@@ -7,6 +7,9 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Build Unsigned IPA
@@ -15,6 +18,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Select Xcode Version
         run: |
@@ -40,13 +45,14 @@ jobs:
         run: |
           mkdir -p Payload
           cp -R "build/GemmaTranscribe.xcarchive/Products/Applications/GemmaTranscribe.app" Payload/
-          zip -qr -9 GemmaTranscribe-unsigned.ipa Payload
-          echo "IPA Size: $(du -sh GemmaTranscribe-unsigned.ipa | cut -f1)"
+          zip -qr -9 GemmaTranscribe.ipa Payload
+          cp GemmaTranscribe.ipa GemmaTranscribe-unsigned.ipa
+          echo "IPA Size: $(du -sh GemmaTranscribe.ipa | cut -f1)"
 
       - name: Verify No Weights in IPA
         run: |
           echo "Checking IPA contents for illegal bundled weights..."
-          if unzip -l GemmaTranscribe-unsigned.ipa | grep -E "\.litertlm|\.bin|\.tflite|\.gguf"; then
+          if unzip -l GemmaTranscribe.ipa | grep -E "\.litertlm|\.bin|\.tflite|\.gguf"; then
             echo "ERROR: Model weights detected inside IPA!"
             exit 1
           else
@@ -57,4 +63,47 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: GemmaTranscribe-unsigned-ipa
-          path: GemmaTranscribe-unsigned.ipa
+          path: GemmaTranscribe.ipa
+
+      - name: Update Feather Source and Publish GitHub Release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BUILD_NUM="${{ github.run_number }}"
+          VERSION="1.0.${BUILD_NUM}"
+          IPA_SIZE=$(stat -f%z GemmaTranscribe.ipa 2>/dev/null || stat -c%s GemmaTranscribe.ipa 2>/dev/null || echo "2048000")
+          DATE_STR=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          
+          # Generate fresh feather-source.json matching AltStore / Feather specification
+          cat <<EOF > feather-source.json
+          {
+            "name": "GemmaTranscribe",
+            "identifier": "com.gemmatranscribe.source",
+            "apps": [
+              {
+                "name": "GemmaTranscribe",
+                "bundleIdentifier": "com.gemmatranscribe.app",
+                "developerName": "Google AI Edge Transcribe",
+                "version": "${VERSION}",
+                "versionDate": "${DATE_STR}",
+                "versionDescription": "Gemma 3n E2B Build #${BUILD_NUM}",
+                "downloadURL": "https://github.com/fuckmmw-afk/GemmaTranscribe-iOS/releases/latest/download/GemmaTranscribe.ipa",
+                "localizedDescription": "Локальное распознавание речи на базе Google Gemma 3n E2B и Cloudflare AI.",
+                "iconURL": "https://raw.githubusercontent.com/fuckmmw-afk/GemmaTranscribe-iOS/main/GemmaTranscribe/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png",
+                "tintColor": "#2997FF",
+                "size": ${IPA_SIZE}
+              }
+            ]
+          }
+          EOF
+          
+          # Update or create the 'latest' release with the direct IPA and source JSON
+          gh release delete latest --yes || true
+          git tag -d latest 2>/dev/null || true
+          git push origin :refs/tags/latest 2>/dev/null || true
+          
+          gh release create latest GemmaTranscribe.ipa feather-source.json \
+            --title "GemmaTranscribe v${VERSION}" \
+            --notes "Автоматическая сборка для Feather / SideStore / TrollStore. Сборка #${BUILD_NUM}. Для добавления источника в Feather используйте: https://github.com/fuckmmw-afk/GemmaTranscribe-iOS/releases/latest/download/feather-source.json" \
+            --latest
