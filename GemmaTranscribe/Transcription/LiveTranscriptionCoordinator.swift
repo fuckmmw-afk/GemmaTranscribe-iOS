@@ -114,13 +114,20 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         let finalAudioSamples = await audioPipeline.stopCapture()
         let duration = max(1, Int(self.elapsedSeconds.rounded()))
         
-        // 1. Check Gemma 3n E2B model inference if model is downloaded
+        // 1. Check accumulated streaming transcript from on-device recognizer
+        let appleAccumulated = modelManager.appleFallbackEngine.getAccumulatedTranscript()
         var cleanText = plainCleanTranscript
-        let isGemmaDownloaded = modelManager.isModelDownloaded(modelManager.activeModelId)
+        if cleanText.isEmpty && !appleAccumulated.isEmpty {
+            cleanText = TranscriptCleaner.clean(appleAccumulated)
+            self.fullRawTranscript = appleAccumulated
+            self.interimText = cleanText
+        }
         
+        // 2. Check Gemma 3n E2B model inference if model is downloaded
+        let isGemmaDownloaded = modelManager.isModelDownloaded(modelManager.activeModelId)
         if isGemmaDownloaded && !finalAudioSamples.isEmpty {
             logger.info("Executing Google Gemma 3n E2B local model transcription...")
-            if let gemmaText = try? await modelManager.activeEngine.processAudio(samples: finalAudioSamples), !gemmaText.isEmpty {
+            if let gemmaText = try? await modelManager.activeEngine.processAudio(samples: finalAudioSamples), !gemmaText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 cleanText = TranscriptCleaner.clean(gemmaText)
                 self.fullRawTranscript = gemmaText
                 self.interimText = cleanText
@@ -135,11 +142,23 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
             cleanText = TranscriptCleaner.clean(fullRawTranscript)
         }
         
+        // 3. Fallback: If on-device speech engines didn't catch speech, fallback to Cloudflare Whisper so user speech is NEVER lost
+        if cleanText.isEmpty && finalAudioSamples.count >= 8000 {
+            logger.info("On-device engines yielded empty transcript. Engaging Cloudflare Whisper fallback with \(finalAudioSamples.count) samples...")
+            let wavData = WAVEncoder.encode(samples: finalAudioSamples)
+            if let cloudText = try? await CloudflareBrainService.transcribeAudio(wavData: wavData), !cloudText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                cleanText = TranscriptCleaner.clean(cloudText)
+                self.fullRawTranscript = cloudText
+                self.interimText = cleanText
+                logger.info("Cloudflare Whisper successfully transcribed speech: \(cleanText.prefix(40))...")
+            }
+        }
+        
         let hasSpeech = !cleanText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let finalCleanText = hasSpeech ? cleanText : "Речь не была распознана (тишина или неразборчиво)"
         self.currentCleanTranscript = finalCleanText
         
-        // Trigger Cloudflare Post-STOP AI Processing & Web Search with CLEAN transcript only
+        // Trigger Cloudflare Post-STOP AI Processing & Context-Aware Search with CLEAN transcript only
         status = .processing
         logger.info("Processing post-stop with clean transcript: \(finalCleanText.prefix(40))...")
         

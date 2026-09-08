@@ -215,14 +215,14 @@ public final class UnifiedAudioCapture: ObservableObject, AudioCaptureProtocol {
         
         // Calculate RMS power for waveform
         let rms = preprocessor.calculateRMS(buffer: buffer)
+        let converted = preprocessor.convert(buffer: buffer, targetFormat: targetFormat, converter: converter)
+        
         Task { @MainActor in
             self.waveformStore.update(power: rms)
-        }
-        
-        // Convert to 16kHz mono Float32
-        if let samples = preprocessor.convert(buffer: buffer, targetFormat: targetFormat, converter: converter) {
-            accumulatedSamples.append(contentsOf: samples)
-            totalSessionSamples.append(contentsOf: samples)
+            if let samples = converted {
+                self.accumulatedSamples.append(contentsOf: samples)
+                self.totalSessionSamples.append(contentsOf: samples)
+            }
         }
     }
     

@@ -118,17 +118,46 @@ public final class LiteRTGemmaEngine: SpeechModelEngine, @unchecked Sendable {
         
 #if canImport(LiteRTLM)
         if let conversation = self.conversation {
-            let wavData = WAVEncoder.encode(samples: audioSamples)
-            let audioMessage = Message(
-                of: .audioData(wavData),
-                .text("Стенографируй эту речь на русском языке точно с пунктуацией. Верни только распознанный текст.")
-            )
-            let response = try await conversation.sendMessage(audioMessage)
-            let transcribed = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
-            logger.info("Gemma 3n transcribed: \(transcribed.prefix(50))...")
-            return transcribed
+            // Slice long audio into 15-second windows (240,000 samples @ 16kHz) to avoid context overflow / OOM on long recordings
+            let maxChunkSamples = 240_000
+            if audioSamples.count <= maxChunkSamples {
+                return try await transcribeSingleChunk(audioSamples, conversation: conversation)
+            } else {
+                var fullResult: [String] = []
+                var offset = 0
+                while offset < audioSamples.count {
+                    let end = min(offset + maxChunkSamples, audioSamples.count)
+                    let slice = Array(audioSamples[offset..<end])
+                    if slice.count > 8000 { // at least 0.5s
+                        do {
+                            let text = try await transcribeSingleChunk(slice, conversation: conversation)
+                            if !text.isEmpty {
+                                fullResult.append(text)
+                            }
+                        } catch {
+                            logger.error("Error transcribing Gemma slice: \(error.localizedDescription)")
+                        }
+                    }
+                    offset = end
+                }
+                return fullResult.joined(separator: " ")
+            }
         }
 #endif
         return ""
     }
+    
+#if canImport(LiteRTLM)
+    private func transcribeSingleChunk(_ samples: [Float], conversation: Conversation) async throws -> String {
+        let wavData = WAVEncoder.encode(samples: samples)
+        let audioMessage = Message(
+            of: .audioData(wavData),
+            .text("Стенографируй эту речь на русском языке точно с пунктуацией. Верни только распознанный текст.")
+        )
+        let response = try await conversation.sendMessage(audioMessage)
+        let transcribed = response.toString.trimmingCharacters(in: .whitespacesAndNewlines)
+        logger.info("Gemma 3n transcribed slice: \(transcribed.prefix(50))...")
+        return transcribed
+    }
+#endif
 }
