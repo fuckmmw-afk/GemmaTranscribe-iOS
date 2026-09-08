@@ -694,7 +694,7 @@ public enum CloudflareBrainService {
     }
     
     private static func extractFallbackSearchQuery(from text: String) -> String {
-        var cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleaned = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let prefixPatterns: [String] = [
             "^(?:поищи|найди|ищи)\\s+(?:в\\s+интернете\\s+)?(?:информацию\\s+)?(?:про|о|об)?\\s*",
             "^(?:что\\s+такое|что\\s+значит|кто\\s+такой|кто\\s+такая|кто\\s+такие)\\s*",

@@ -18,7 +18,7 @@ public final class ModelManager: ObservableObject {
     
     @Published public private(set) var activeModelId: String
     @Published public private(set) var downloadedModelIds: Set<String> = []
-    @Published public private(set) var currentDownloadProgress: ModelDownloadProgress?\
+    @Published public private(set) var currentDownloadProgress: ModelDownloadProgress?
     @Published public private(set) var downloadingModelId: String?
     @Published public private(set) var errorMessage: String?
     @Published public private(set) var isModelReady: Bool = false
