@@ -2,7 +2,7 @@
 //  LiveTranscriptionCoordinator.swift
 //  GemmaTranscribe
 //
-//  Central coordinator for real-time speech capture, local model transcription,
+//  Central coordinator for real-time speech capture, on-device Gemma 3n E2B transcription,
 //  text cleaning, and post-STOP Cloudflare AI enrichment.
 //
 
@@ -44,12 +44,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     }
     
     public init() {
-        // Stream raw hardware audio buffers directly to active speech recognizer
-        audioPipeline.onRawBufferAvailable = { [weak self] buffer in
-            self?.modelManager.appleFallbackEngine.appendRawBuffer(buffer)
-        }
-        
-        // Handle chunk intervals for models and duration
+        // Stream audio chunks directly to on-device Gemma 3n E2B
         audioPipeline.onAudioChunkAvailable = { chunk in
             Task { @MainActor in
                 await LiveTranscriptionCoordinator.shared.processAudioChunk(chunk)
@@ -81,23 +76,29 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         transcriptLines.removeAll()
         fullRawTranscript = ""
         latestBrainResponse = nil
+        
+        // Ensure Gemma 3n model is loaded before starting
+        if !modelManager.isModelReady {
+            await modelManager.loadActiveEngine()
+        }
+        
+        guard modelManager.isModelReady else {
+            status = .failed
+            errorText = "Модель Gemma 3n E2B не найдена. Нажмите на плашку вверху экрана, чтобы открыть Менеджер моделей и загрузить веса."
+            logger.error("Recording aborted: Gemma 3n E2B weights are not ready on device")
+            return
+        }
+        
         status = .recording
         elapsedSeconds = 0
         recordingStartTime = Date()
-        
-        // Start streaming recognition on-device
-        modelManager.appleFallbackEngine.startStreaming { recognizedText in
-            Task { @MainActor in
-                LiveTranscriptionCoordinator.shared.handleStreamingSpeechUpdate(recognizedText)
-            }
-        }
         
         let chunkDuration = UserDefaults.standard.double(forKey: AppConfig.audioChunkDurationKey)
         let effectiveDuration = chunkDuration > 0 ? chunkDuration : AppConfig.defaultAudioChunkDuration
         
         do {
             try await audioPipeline.startCapture(chunkDuration: effectiveDuration)
-            logger.info("Recording session started")
+            logger.info("Recording session started with on-device Gemma 3n E2B engine")
         } catch {
             status = .failed
             errorText = error.localizedDescription
@@ -109,29 +110,24 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         guard status.isRecordingOrTranscribing else { return }
         
         status = .transcribing
-        modelManager.appleFallbackEngine.stopStreaming()
-        
         let finalAudioSamples = await audioPipeline.stopCapture()
         let duration = max(1, Int(self.elapsedSeconds.rounded()))
         
-        // 1. Check accumulated streaming transcript from on-device recognizer
-        let appleAccumulated = modelManager.appleFallbackEngine.getAccumulatedTranscript()
         var cleanText = plainCleanTranscript
-        if cleanText.isEmpty && !appleAccumulated.isEmpty {
-            cleanText = TranscriptCleaner.clean(appleAccumulated)
-            self.fullRawTranscript = appleAccumulated
-            self.interimText = cleanText
-        }
         
-        // 2. Check Gemma 3n E2B model inference if model is downloaded
-        let isGemmaDownloaded = modelManager.isModelDownloaded(modelManager.activeModelId)
-        if isGemmaDownloaded && !finalAudioSamples.isEmpty {
-            logger.info("Executing Google Gemma 3n E2B local model transcription...")
-            if let gemmaText = try? await modelManager.activeEngine.processAudio(samples: finalAudioSamples), !gemmaText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                cleanText = TranscriptCleaner.clean(gemmaText)
-                self.fullRawTranscript = gemmaText
-                self.interimText = cleanText
-                logger.info("Google Gemma 3n E2B recognized: \(cleanText.prefix(40))...")
+        // Execute Google Gemma 3n E2B local model transcription on recorded audio
+        if !finalAudioSamples.isEmpty {
+            logger.info("Executing Google Gemma 3n E2B local model transcription on \(finalAudioSamples.count) samples...")
+            do {
+                let gemmaText = try await modelManager.activeEngine.processAudio(samples: finalAudioSamples)
+                if !gemmaText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    cleanText = TranscriptCleaner.clean(gemmaText)
+                    self.fullRawTranscript = gemmaText
+                    self.interimText = cleanText
+                    logger.info("Google Gemma 3n E2B recognized: \(cleanText.prefix(40))...")
+                }
+            } catch {
+                logger.error("Gemma 3n transcription error: \(error.localizedDescription)")
             }
         }
         
@@ -142,18 +138,6 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
             cleanText = TranscriptCleaner.clean(fullRawTranscript)
         }
         
-        // 3. Fallback: If on-device speech engines didn't catch speech, fallback to Cloudflare Whisper so user speech is NEVER lost
-        if cleanText.isEmpty && finalAudioSamples.count >= 8000 {
-            logger.info("On-device engines yielded empty transcript. Engaging Cloudflare Whisper fallback with \(finalAudioSamples.count) samples...")
-            let wavData = WAVEncoder.encode(samples: finalAudioSamples)
-            if let cloudText = try? await CloudflareBrainService.transcribeAudio(wavData: wavData), !cloudText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                cleanText = TranscriptCleaner.clean(cloudText)
-                self.fullRawTranscript = cloudText
-                self.interimText = cleanText
-                logger.info("Cloudflare Whisper successfully transcribed speech: \(cleanText.prefix(40))...")
-            }
-        }
-        
         let hasSpeech = !cleanText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let finalCleanText = hasSpeech ? cleanText : "Речь не была распознана (тишина или неразборчиво)"
         self.currentCleanTranscript = finalCleanText
@@ -162,9 +146,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
         status = .processing
         logger.info("Processing post-stop with clean transcript: \(finalCleanText.prefix(40))...")
         
-        let engineName = isGemmaDownloaded
-            ? "Google Gemma 3n E2B (LiteRT)"
-            : modelManager.appleFallbackEngine.displayName
+        let engineName = "Google Gemma 3n E2B (LiteRT)"
         
         if hasSpeech {
             do {
@@ -191,7 +173,6 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                 self.status = .ready
                 self.isPostStopSheetPresented = true
                 
-                // Save even if Cloudflare failed
                 let record = TranscriptionRecord(
                     durationSeconds: duration,
                     rawTranscript: fullRawTranscript.isEmpty ? finalCleanText : fullRawTranscript,
@@ -225,13 +206,6 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
     
     // MARK: - Private Processing
     
-    public func handleStreamingSpeechUpdate(_ text: String) {
-        let cleaned = TranscriptCleaner.clean(text)
-        guard !cleaned.isEmpty else { return }
-        self.interimText = cleaned
-        self.fullRawTranscript = text
-    }
-    
     private func processAudioChunk(_ samples: [Float], isFinal: Bool = false) async {
         guard !samples.isEmpty else { return }
         
@@ -251,7 +225,7 @@ public final class LiveTranscriptionCoordinator: ObservableObject {
                 self.interimText = cleanedChunk
             }
         } catch {
-            logger.error("Error transcribing audio chunk: \(error.localizedDescription)")
+            logger.error("Error transcribing audio chunk via Gemma 3n: \(error.localizedDescription)")
         }
     }
 }

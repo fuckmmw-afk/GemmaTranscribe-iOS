@@ -18,30 +18,28 @@ public final class ModelManager: ObservableObject {
     
     @Published public private(set) var activeModelId: String
     @Published public private(set) var downloadedModelIds: Set<String> = []
-    @Published public private(set) var currentDownloadProgress: ModelDownloadProgress?
+    @Published public private(set) var currentDownloadProgress: ModelDownloadProgress?\
     @Published public private(set) var downloadingModelId: String?
     @Published public private(set) var errorMessage: String?
+    @Published public private(set) var isModelReady: Bool = false
     
     private var downloader: ModelRepoDownloader?
     private var cancellables = Set<AnyCancellable>()
     
-    public let appleFallbackEngine = AppleOnDeviceSpeechEngine()
+    // Dedicated Gemma 3n E2B Engine
+    public private(set) var gemmaEngine: LiteRTGemmaEngine
     
-    // Active speech engine
-    public private(set) var activeEngine: SpeechModelEngine
+    // Active speech engine (always Gemma 3n)
+    public var activeEngine: SpeechModelEngine {
+        gemmaEngine
+    }
     
     public init() {
         let storedModel = UserDefaults.standard.string(forKey: AppConfig.activeModelKey) ?? AppConfig.defaultModelId
         self.activeModelId = storedModel
-        self.activeEngine = appleFallbackEngine
+        self.gemmaEngine = LiteRTGemmaEngine(modelId: storedModel)
         
         refreshDownloadedModels()
-        
-        if isModelDownloaded(storedModel) {
-            self.activeEngine = LiteRTGemmaEngine(modelId: storedModel)
-        } else {
-            self.activeEngine = appleFallbackEngine
-        }
         
         NotificationCenter.default.publisher(for: .modelDownloadProgressUpdated)
             .receive(on: DispatchQueue.main)
@@ -52,14 +50,18 @@ public final class ModelManager: ObservableObject {
             }
             .store(in: &cancellables)
             
-        // Attempt loading active model if already downloaded
+        // Automatically attempt to find and initialize Gemma 3n weights
         Task {
             await self.loadActiveEngine()
         }
     }
     
     public func isModelDownloaded(_ identifier: String) -> Bool {
-        downloadedModelIds.contains(identifier)
+        if downloadedModelIds.contains(identifier) {
+            return true
+        }
+        // If any genuine Gemma 3n weights are present on disk, count as downloaded
+        return !downloadedModelIds.isEmpty
     }
     
     public func isActiveModel(_ identifier: String) -> Bool {
@@ -68,45 +70,103 @@ public final class ModelManager: ObservableObject {
     
     public func refreshDownloadedModels() {
         let modelsDir = AppConfig.modelsDirectory
-        guard let subdirs = try? FileManager.default.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil) else {
-            downloadedModelIds = []
-            return
-        }
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         
         var downloaded = Set<String>()
-        for dir in subdirs where dir.hasDirectoryPath {
-            let sanitizedName = dir.lastPathComponent
-            let modelId = sanitizedName.replacingOccurrences(of: "___", with: "/")
-            
-            // Check actual genuine model weights
-            let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])) ?? []
-            var totalBytes: Int64 = 0
-            for file in files {
-                let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
-                totalBytes += Int64(size)
-            }
-            
-            // Valid model file must be at least 50MB (Gemma is ~1.8-3.6 GB)
-            if totalBytes >= 50_000_000 {
-                downloaded.insert(modelId)
-            } else if totalBytes > 0 && totalBytes < 5_000_000 {
-                // Purge corrupted/HTTP error files (e.g. 140 bytes 401 error response)
-                logger.warning("Purging corrupted/error download for \(modelId, privacy: .public) (\(totalBytes) bytes)")
-                try? FileManager.default.removeItem(at: dir)
+        
+        // 1. Check directories in models/
+        if let subdirs = try? FileManager.default.contentsOfDirectory(at: modelsDir, includingPropertiesForKeys: nil) {
+            for dir in subdirs {
+                let sanitizedName = dir.lastPathComponent
+                let modelId = sanitizedName.replacingOccurrences(of: "___", with: "/")
+                
+                var isDirectory: ObjCBool = false
+                if FileManager.default.fileExists(atPath: dir.path, isDirectory: &isDirectory) {
+                    if isDirectory.boolValue {
+                        let files = (try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+                        var totalBytes: Int64 = 0
+                        for file in files {
+                            let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                            totalBytes += Int64(size)
+                        }
+                        
+                        if totalBytes >= 50_000_000 {
+                            downloaded.insert(modelId)
+                        } else if totalBytes > 0 && totalBytes < 5_000_000 {
+                            logger.warning("Purging corrupted download for \(modelId, privacy: .public)")
+                            try? FileManager.default.removeItem(at: dir)
+                        }
+                    } else {
+                        // Direct file in modelsDir
+                        let size = (try? dir.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                        if size >= 50_000_000 {
+                            downloaded.insert(AppConfig.defaultModelId)
+                        }
+                    }
+                }
             }
         }
+        
+        // 2. Also check Documents directory for any pre-existing model weights
+        if let docFiles = try? FileManager.default.contentsOfDirectory(at: docsDir, includingPropertiesForKeys: [.fileSizeKey]) {
+            for file in docFiles {
+                let ext = file.pathExtension.lowercased()
+                let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                if (ext == "litertlm" || ext == "bin" || ext == "tflite") && size >= 50_000_000 {
+                    downloaded.insert(AppConfig.defaultModelId)
+                }
+            }
+        }
+        
         self.downloadedModelIds = downloaded
+        
+        // If default model wasn't set, but another Gemma model was downloaded, activate it
+        if !downloaded.isEmpty && !downloaded.contains(activeModelId) {
+            if let first = downloaded.first {
+                self.activeModelId = first
+            }
+        }
+    }
+    
+    public func locateModelFile() -> URL? {
+        let modelsDir = AppConfig.modelsDirectory
+        let docsDir = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        
+        let sanitizedName = activeModelId.replacingOccurrences(of: "/", with: "___")
+        let preferredDir = modelsDir.appendingPathComponent(sanitizedName, isDirectory: true)
+        
+        let candidateDirs = [preferredDir, modelsDir, docsDir]
+        
+        for dir in candidateDirs {
+            if let enumerator = FileManager.default.enumerator(at: dir, includingPropertiesForKeys: [.fileSizeKey, .isDirectoryKey], options: [.skipsHiddenFiles]) {
+                var found: [(url: URL, size: Int64)] = []
+                for case let fileURL as URL in enumerator {
+                    guard let vals = try? fileURL.resourceValues(forKeys: [.fileSizeKey, .isDirectoryKey]),
+                          vals.isDirectory == false else { continue }
+                    let size = Int64(vals.fileSize ?? 0)
+                    let ext = fileURL.pathExtension.lowercased()
+                    if (ext == "litertlm" || ext == "tflite" || ext == "bin" || size > 50_000_000) && size > 5_000_000 {
+                        found.append((fileURL, size))
+                    }
+                }
+                if let best = found.max(by: { $0.size < $1.size }) {
+                    return best.url
+                }
+            }
+        }
+        return nil
     }
     
     public func selectActiveModel(_ identifier: String) async {
         guard activeModelId != identifier else { return }
         
         logger.info("Switching active model to \(identifier, privacy: .public)")
-        await activeEngine.unload()
+        await gemmaEngine.unload()
         
         activeModelId = identifier
         UserDefaults.standard.set(identifier, forKey: AppConfig.activeModelKey)
         
+        self.gemmaEngine = LiteRTGemmaEngine(modelId: identifier)
         await loadActiveEngine()
     }
     
@@ -135,10 +195,7 @@ public final class ModelManager: ObservableObject {
             currentDownloadProgress = nil
             self.downloader = nil
             
-            // Auto-activate if no model currently active or if default
-            if activeModelId == model.identifier || !isModelDownloaded(activeModelId) {
-                await selectActiveModel(model.identifier)
-            }
+            await selectActiveModel(model.identifier)
             logger.info("Model download finished successfully: \(model.identifier, privacy: .public)")
         } catch {
             logger.error("Download failed for \(model.identifier, privacy: .public): \(error.localizedDescription)")
@@ -165,31 +222,30 @@ public final class ModelManager: ObservableObject {
         
         if activeModelId == identifier {
             Task {
-                await activeEngine.unload()
-                self.activeEngine = appleFallbackEngine
+                await gemmaEngine.unload()
+                self.isModelReady = false
             }
         }
         logger.info("Model deleted: \(identifier, privacy: .public)")
     }
     
-    private func loadActiveEngine() async {
-        guard isModelDownloaded(activeModelId) else {
-            self.activeEngine = appleFallbackEngine
-            logger.info("Model weights not on device; activeEngine set to Apple On-Device Neural Speech")
+    public func loadActiveEngine() async {
+        refreshDownloadedModels()
+        
+        guard let modelFileURL = locateModelFile() else {
+            self.isModelReady = false
+            logger.warning("Gemma 3n E2B model weights not found on disk")
             return
         }
         
-        let gemmaEngine = LiteRTGemmaEngine(modelId: activeModelId)
-        let sanitizedName = activeModelId.replacingOccurrences(of: "/", with: "___")
-        let destination = AppConfig.modelsDirectory.appendingPathComponent(sanitizedName, isDirectory: true)
-        
+        logger.info("Loading Gemma 3n E2B weights from \(modelFileURL.path, privacy: .public)...")
         do {
-            try await gemmaEngine.loadModel(from: destination)
-            self.activeEngine = gemmaEngine
-            logger.info("Active model engine loaded: \(self.activeModelId, privacy: .public)")
+            try await gemmaEngine.loadModel(from: modelFileURL)
+            self.isModelReady = gemmaEngine.isLoaded
+            logger.info("Gemma 3n E2B engine loaded successfully and is ready for on-device transcription!")
         } catch {
-            logger.error("Failed to load active model \(self.activeModelId, privacy: .public): \(error.localizedDescription), using Apple On-Device fallback")
-            self.activeEngine = appleFallbackEngine
+            logger.error("Failed to load Gemma 3n engine: \(error.localizedDescription)")
+            self.isModelReady = false
         }
     }
 }

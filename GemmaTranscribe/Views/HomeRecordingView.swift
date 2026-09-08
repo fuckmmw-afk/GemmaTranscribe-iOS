@@ -45,6 +45,30 @@ public struct HomeRecordingView: View {
                         .padding(.horizontal)
                         .padding(.top, 8)
                     
+                    // Model Missing Alert Banner
+                    if !modelManager.isModelReady && coordinator.errorText != nil {
+                        Button {
+                            activeSheet = .modelManager
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "arrow.down.circle.fill")
+                                    .foregroundColor(.orange)
+                                Text(coordinator.errorText ?? "Загрузите веса Gemma 3n")
+                                    .font(.caption)
+                                    .foregroundColor(.primary)
+                                    .multilineTextAlignment(.leading)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding(10)
+                            .background(Color.orange.opacity(0.12))
+                            .cornerRadius(10)
+                        }
+                        .padding(.horizontal)
+                    }
+                    
                     // Waveform & Status Section
                     waveformSection
                         .padding(.horizontal)
@@ -98,21 +122,25 @@ public struct HomeRecordingView: View {
     
     private var topBarView: some View {
         HStack {
-            // Model Selector Pill
+            // Model Selector Pill (strictly Gemma 3n E2B)
             Button {
                 activeSheet = .modelManager
             } label: {
                 HStack(spacing: 6) {
-                    let isReady = modelManager.isModelDownloaded(modelManager.activeModelId)
+                    let isReady = modelManager.isModelReady || modelManager.isModelDownloaded(modelManager.activeModelId)
+                    let isDownloading = modelManager.downloadingModelId != nil
+                    
                     Circle()
-                        .fill(isReady ? Color.green : Color.orange)
+                        .fill(isReady ? Color.green : (isDownloading ? Color.blue : Color.orange))
                         .frame(width: 8, height: 8)
                     
                     let title: String = {
-                        if isReady {
-                            return "Gemma 3n E2B"
+                        if isDownloading, let progress = modelManager.currentDownloadProgress {
+                            return "Gemma 3n: \(progress.percentFormatted)"
+                        } else if isReady {
+                            return "Gemma 3n E2B (Активна)"
                         } else {
-                            return "Apple Neural (Ready)"
+                            return "Gemma 3n E2B (Не скачана)"
                         }
                     }()
                     
@@ -196,12 +224,6 @@ public struct HomeRecordingView: View {
                 }
                 
                 Spacer()
-                
-                if let error = coordinator.errorText {
-                    Text(error)
-                        .font(.caption2)
-                        .foregroundColor(.red)
-                }
             }
             
             // BrandWaveform View
@@ -243,7 +265,7 @@ public struct HomeRecordingView: View {
         case .recording:
             return "Нажмите, чтобы остановить и обработать в Cloudflare"
         case .transcribing:
-            return "Завершение локальной транскрипции..."
+            return "Gemma 3n E2B: локальная стенография..."
         case .processing:
             return "Cloudflare: AI структурирование и поиск..."
         case .ready:
