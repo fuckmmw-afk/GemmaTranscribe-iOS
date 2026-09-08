@@ -229,13 +229,13 @@ public enum CloudflareBrainService {
         
         let userPrompt = "\(searchContext)Стенограмма речи:\n\"\(cleanTranscript)\""
         
-        let payload: [String: Any] = [\
-            "messages": [\
-                ["role": "system", "content": systemPrompt],\
-                ["role": "user", "content": userPrompt]\
-            ],\
-            "max_tokens": 1024,\
-            "temperature": 0.2\
+        let payload: [String: Any] = [
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": userPrompt]
+            ],
+            "max_tokens": 1024,
+            "temperature": 0.2
         ]
         
         guard let httpBody = try? JSONSerialization.data(withJSONObject: payload) else {
