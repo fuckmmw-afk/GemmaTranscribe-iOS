@@ -86,7 +86,7 @@ public struct PostStopResultCardView: View {
                                             Text(snippet)
                                                 .font(.caption)
                                                 .foregroundColor(.secondary)
-                                                .lineLimit(2)
+                                                .fixedSize(horizontal: false, vertical: true)
                                         }
                                         
                                         Text(url.host ?? "")
@@ -149,6 +149,7 @@ public struct PostStopResultCardView: View {
                                     Text(card.definition)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
                                     
                                     if let notes = card.notes, !notes.isEmpty {
                                         VStack(alignment: .leading, spacing: 4) {
@@ -178,10 +179,11 @@ public struct PostStopResultCardView: View {
                             
                             VStack(alignment: .leading, spacing: 6) {
                                 ForEach(actions, id: \.self) { action in
-                                    HStack(spacing: 8) {
+                                    HStack(alignment: .top, spacing: 8) {
                                         Image(systemName: "checkmark.circle")
-                                            .foregroundColor(.dictusAccent)
                                             .font(.caption)
+                                            .foregroundColor(.dictusAccent)
+                                            .padding(.top, 2)
                                         Text(action)
                                             .font(.subheadline)
                                     }
@@ -196,14 +198,13 @@ public struct PostStopResultCardView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Результат обработки")
+            .navigationTitle("Результат записи")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Готово") {
                         onDismiss()
                     }
-                    .fontWeight(.semibold)
                 }
             }
         }
